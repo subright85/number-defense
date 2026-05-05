@@ -3,15 +3,39 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
     <meta name="theme-color" content="#0a0a1a" />
-    <title>Number Defense</title>
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <title>Number Defense — Math · Pop · Defend</title>
+    <meta name="description" content="An endless arcade math game. Build equations from a number pool to pop falling balloons. Survive each operator (+, −, ×, ÷) as long as you can. Free in your browser." />
+    <meta name="keywords" content="math game, addition, subtraction, multiplication, division, balloon pop, kids math, number defense, arcade, free browser game" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Number Defense — Math · Pop · Defend" />
+    <meta property="og:description" content="Build equations to pop falling balloons. Endless arcade math game with leaderboards." />
+    <meta property="og:image" content="/favicon.svg" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="ko_KR" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Number Defense — Math · Pop · Defend" />
+    <meta name="twitter:description" content="Build equations to pop falling balloons. Endless arcade math game." />
+    <meta name="twitter:image" content="/favicon.svg" />
+
+    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>
+    <noscript>This game needs JavaScript. Please enable it.</noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

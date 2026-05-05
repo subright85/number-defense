@@ -22,7 +22,7 @@ const MODE_META: Record<EquationKind, { glyph: string; color: string; available:
 export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [now, setNow] = useState(Date.now());
-  const { state, flashes, startGame, restart, tap, drop, untap, submit, clear } = useGameLoop();
+  const { state, flashes, startGame, restart, togglePause, tap, drop, untap, submit, clear } = useGameLoop();
   const recentlyKilledRef = useRef<Map<string, number>>(new Map());
   const { locale, toggleLocale, t } = useT();
   const recordedHighScoreRef = useRef(false);
@@ -146,7 +146,10 @@ export default function App() {
     recordedHighScoreRef.current = true;
     const accuracy = state.attempts > 0 ? state.hits / state.attempts : 0;
     const finalScore = Math.round(state.score * accuracy);
-    const survivedSec = state.startedAt > 0 ? Math.floor((Date.now() - state.startedAt) / 1000) : 0;
+    const livePauseElapsed = state.pausedAt > 0 ? Date.now() - state.pausedAt : 0;
+    const survivedSec = state.startedAt > 0
+      ? Math.max(0, Math.floor((Date.now() - state.startedAt - state.pausedTotal - livePauseElapsed) / 1000))
+      : 0;
     const result = recordScore(state.mode, {
       score: finalScore,
       killed: state.killedSoFar,
@@ -253,6 +256,8 @@ export default function App() {
           <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 14 }}>
             Pick a mode. Survive as long as you can.
           </div>
+
+          <DonationFooter />
         </div>
         {showLeaderboard && (
           <LeaderboardModal
@@ -270,7 +275,10 @@ export default function App() {
   if (state.phase === 'gameover') {
     const accuracy = state.attempts > 0 ? Math.round((state.hits / state.attempts) * 100) : 0;
     const finalScore = Math.round(state.score * (state.attempts > 0 ? state.hits / state.attempts : 0));
-    const survivedSec = state.startedAt > 0 ? Math.floor((Date.now() - state.startedAt) / 1000) : 0;
+    const livePauseElapsed = state.pausedAt > 0 ? Date.now() - state.pausedAt : 0;
+    const survivedSec = state.startedAt > 0
+      ? Math.max(0, Math.floor((Date.now() - state.startedAt - state.pausedTotal - livePauseElapsed) / 1000))
+      : 0;
     const hsSnap = latestHighScoreSnapshot;
     return (
       <>
@@ -290,6 +298,7 @@ export default function App() {
             </div>
             <div>{t('over.killedPassed')}: <b>{state.killedSoFar}</b> · <b>{state.reachedBaseSoFar}</b></div>
             <div>{t('over.accuracy')}: <b>{accuracy}%</b> ({state.hits}/{state.attempts})</div>
+            <div>🔥 Best combo: <b>×{state.bestCombo}</b></div>
             <div style={{ marginTop: 12, fontSize: 22 }}>
               <b style={{ color: '#fbbf24' }}>{finalScore}</b>
               <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginLeft: 8 }}>
@@ -321,6 +330,19 @@ export default function App() {
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 22, flexWrap: 'wrap' }}>
             <button onClick={() => startGame(state.mode)} style={primaryBtn(MODE_META[state.mode].color)}>
               ↻ Retry
+            </button>
+            <button
+              onClick={() => shareScore({
+                mode: state.mode,
+                glyph: MODE_META[state.mode].glyph,
+                score: finalScore,
+                killed: state.killedSoFar,
+                accuracy,
+                survivedSec,
+              })}
+              style={secondaryBtn()}
+            >
+              ✉ Share
             </button>
             <button onClick={() => setShowLeaderboard(state.mode)} style={secondaryBtn()}>
               🏆 Leaderboard
@@ -363,14 +385,34 @@ export default function App() {
         <Pill icon="⭐" label={state.score} accent="#a78bfa" />
         <Pill icon="🎈" label={state.killedSoFar} accent="#38bdf8" />
         <Pill icon="⏱" label={`${survivedSec}s`} accent="#fbbf24" />
+        {state.combo >= 2 && (
+          <Pill icon="🔥" label={`x${state.combo}`} accent="#f97316" />
+        )}
       </div>
-      <div style={{
-        fontSize: 12, color: 'rgba(255,255,255,0.85)',
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: 999, padding: '4px 14px',
-      }}>
-        {stage.label} · max {stage.numberMax}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{
+          fontSize: 12, color: 'rgba(255,255,255,0.85)',
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 999, padding: '4px 14px',
+        }}>
+          {stage.label} · max {stage.numberMax}
+        </div>
+        <button
+          onClick={togglePause}
+          style={{
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            color: 'white',
+            padding: '4px 10px',
+            borderRadius: 999,
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          {state.phase === 'paused' ? '▶ Resume' : '⏸ Pause'}
+        </button>
       </div>
 
       {/* Falling lane */}
@@ -578,6 +620,37 @@ export default function App() {
         <br />{t('help.line2')}
       </div>
     </div>
+    {state.phase === 'paused' && (
+      <div
+        onClick={togglePause}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 250,
+          background: 'rgba(2, 4, 18, 0.65)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexDirection: 'column', gap: 16,
+          cursor: 'pointer',
+        }}
+      >
+        <div style={{
+          fontSize: 32, fontWeight: 800, color: 'white',
+          background: 'linear-gradient(90deg, #818cf8, #f472b6, #fbbf24)',
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        }}>
+          ⏸ Paused
+        </div>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)' }}>
+          tap anywhere to resume
+        </div>
+        <button
+          onClick={(e) => { e.stopPropagation(); restart(); }}
+          style={{ ...secondaryBtn(), marginTop: 12 }}
+        >
+          ← Quit to menu
+        </button>
+      </div>
+    )}
     {drag && drag.moved && (
       <div
         style={{
@@ -815,4 +888,56 @@ function secondaryBtn(): React.CSSProperties {
     fontWeight: 700,
     cursor: 'pointer',
   };
+}
+
+function DonationFooter() {
+  return (
+    <div style={{
+      marginTop: 24,
+      paddingTop: 14,
+      borderTop: '1px dashed rgba(255,255,255,0.12)',
+      fontSize: 11, color: 'rgba(255,255,255,0.4)',
+      display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center',
+    }}>
+      <div>Free, no ads. Built with care.</div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <a
+          href="https://buymeacoffee.com/sukim"
+          target="_blank" rel="noopener noreferrer"
+          style={{
+            background: 'linear-gradient(135deg, #fde047, #f59e0b)',
+            color: '#1f2937', padding: '4px 10px', borderRadius: 999,
+            fontSize: 11, fontWeight: 700, textDecoration: 'none',
+            border: '1px solid #d97706',
+          }}
+        >
+          ☕ Buy me a coffee
+        </a>
+      </div>
+    </div>
+  );
+}
+
+async function shareScore(args: {
+  mode: EquationKind; glyph: string; score: number;
+  killed: number; accuracy: number; survivedSec: number;
+}) {
+  const url = typeof window !== 'undefined' ? window.location.origin || window.location.href : '';
+  const title = 'Number Defense';
+  const text = `Just survived ${args.survivedSec}s in Number Defense (${args.glyph} mode) — score ${args.score}, ${args.killed} pops, ${args.accuracy}% accuracy. ${url}`;
+  if (typeof navigator !== 'undefined' && 'share' in navigator) {
+    try {
+      await (navigator as Navigator & { share: (data: ShareData) => Promise<void> }).share({ title, text, url });
+      return;
+    } catch { /* user cancelled */ }
+  }
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      alert('Score copied to clipboard!');
+      return;
+    } catch { /* fallthrough */ }
+  }
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  if (typeof window !== 'undefined') window.open(tweetUrl, '_blank', 'noopener');
 }

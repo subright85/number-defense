@@ -157,8 +157,12 @@ export function createInitialState(rng: () => number = Math.random): GameState {
     reachedBaseSoFar: 0,
     attempts: 0,
     hits: 0,
+    combo: 0,
+    bestCombo: 0,
     lastSpawnAt: 0,
     startedAt: 0,
+    pausedAt: 0,
+    pausedTotal: 0,
   };
 }
 
@@ -180,8 +184,32 @@ export function startEndlessRun(s: GameState, mode: EquationKind, now: number, r
     reachedBaseSoFar: 0,
     attempts: 0,
     hits: 0,
+    combo: 0,
+    bestCombo: 0,
     lastSpawnAt: 0,
     startedAt: now,
+    pausedAt: 0,
+    pausedTotal: 0,
+  };
+}
+
+export function pauseGame(s: GameState, now: number): GameState {
+  if (s.phase !== 'playing') return s;
+  return { ...s, phase: 'paused', pausedAt: now };
+}
+
+export function resumeGame(s: GameState, now: number): GameState {
+  if (s.phase !== 'paused') return s;
+  const elapsed = s.pausedAt > 0 ? now - s.pausedAt : 0;
+  // Shift enemy spawn times so they don't all "catch up" after resume
+  const enemies = s.enemies.map(e => ({ ...e, spawnedAt: e.spawnedAt + elapsed }));
+  return {
+    ...s,
+    phase: 'playing',
+    enemies,
+    pausedAt: 0,
+    pausedTotal: s.pausedTotal + elapsed,
+    lastSpawnAt: s.lastSpawnAt > 0 ? s.lastSpawnAt + elapsed : 0,
   };
 }
 
@@ -268,17 +296,19 @@ export function tickEnemies(s: GameState, now: number): GameState {
   const remaining: Enemy[] = [];
   let lives = s.lives;
   let reached = s.reachedBaseSoFar;
+  let combo = s.combo;
   for (const e of s.enemies) {
     const elapsed = now - e.spawnedAt;
     if (elapsed >= e.fallDurationMs) {
       lives = lives - 1;
       reached = reached + 1;
+      combo = 0; // life lost breaks combo
     } else {
       remaining.push(e);
     }
   }
   const phase: GameState['phase'] = lives <= 0 ? 'gameover' : s.phase;
-  return { ...s, enemies: remaining, lives, reachedBaseSoFar: reached, phase };
+  return { ...s, enemies: remaining, lives, reachedBaseSoFar: reached, phase, combo };
 }
 
 export function tapPoolEntry(s: GameState, entryId: string): GameState {
@@ -372,10 +402,17 @@ export function submitEquation(s: GameState, now: number): SubmitResult {
 
   let score = s.score;
   let killedSoFar = s.killedSoFar;
+  let combo = s.combo;
+  let bestCombo = s.bestCombo;
   if (hit) {
-    score += 10 + Math.max(0, Math.floor(stage.enemyMaxValue / 4));
+    combo = combo + 1;
+    bestCombo = Math.max(bestCombo, combo);
+    const base = 10 + Math.max(0, Math.floor(stage.enemyMaxValue / 4));
+    const comboBonus = Math.max(0, combo - 1) * 5;
+    score += base + comboBonus;
     killedSoFar += 1;
   } else if (result !== null) {
+    combo = 0;
     score = Math.max(0, score - 1);
   }
 
@@ -398,6 +435,8 @@ export function submitEquation(s: GameState, now: number): SubmitResult {
     hits,
     killedSoFar,
     stageIndex,
+    combo,
+    bestCombo,
   };
   return { state: nextState, hit, result, killedEnemyId };
 }

@@ -28,7 +28,7 @@ export interface Enemy {
   fallDurationMs: number;
 }
 
-export type GamePhase = 'menu' | 'playing' | 'gameover';
+export type GamePhase = 'menu' | 'playing' | 'paused' | 'gameover';
 
 export interface PoolEntry {
   id: string;
@@ -50,6 +50,10 @@ export interface GameState {
   reachedBaseSoFar: number;
   attempts: number;
   hits: number;
+  combo: number;            // consecutive hits without a miss/lifeloss
+  bestCombo: number;        // best combo this run
   lastSpawnAt: number;
   startedAt: number;        // epoch ms when run started; 0 if not started
+  pausedAt: number;         // epoch ms; 0 if not currently paused
+  pausedTotal: number;      // accumulated paused time in ms
 }

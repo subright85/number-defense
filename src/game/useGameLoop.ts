@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { EquationKind, GameState } from './types';
 import {
-  createInitialState, startEndlessRun,
+  createInitialState, startEndlessRun, pauseGame, resumeGame,
   spawnEnemy, tickEnemies, refillPool,
   tapPoolEntry, dropIntoSlot, untapEquationSlot, clearEquation, submitEquation,
   getStage,
@@ -36,6 +36,15 @@ export function useGameLoop() {
   const restart = useCallback(() => {
     setState(createInitialState());
     setFlashes([]);
+  }, []);
+
+  const togglePause = useCallback(() => {
+    setState(s => {
+      const now = Date.now();
+      if (s.phase === 'playing') return pauseGame(s, now);
+      if (s.phase === 'paused') return resumeGame(s, now);
+      return s;
+    });
   }, []);
 
   // Game tick: spawns, falling progress, pool refill.
@@ -112,5 +121,5 @@ export function useGameLoop() {
     return () => clearTimeout(id);
   }, [flashes]);
 
-  return { state, flashes, startGame, restart, tap, drop, untap, clear, submit };
+  return { state, flashes, startGame, restart, togglePause, tap, drop, untap, clear, submit };
 }
