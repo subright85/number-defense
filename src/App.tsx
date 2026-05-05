@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { loadBalance, getStage, getHighScore, getLeaderboard, recordScore } from './game/engine';
+import { loadBalance, getStage, getHighScore, getLeaderboard, recordScore, getDailyBest, recordDaily, dailyKindForDate, dateKey } from './game/engine';
 import type { LeaderboardEntry } from './game/engine';
 import { useGameLoop } from './game/useGameLoop';
 import { useT, type Locale } from './i18n';
@@ -22,7 +22,7 @@ const MODE_META: Record<EquationKind, { glyph: string; color: string; available:
 export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [now, setNow] = useState(Date.now());
-  const { state, flashes, startGame, restart, togglePause, tap, drop, untap, submit, clear } = useGameLoop();
+  const { state, flashes, startGame, startDaily, restart, togglePause, tap, drop, untap, submit, clear } = useGameLoop();
   const recentlyKilledRef = useRef<Map<string, number>>(new Map());
   const { locale, toggleLocale, t } = useT();
   const recordedHighScoreRef = useRef(false);
@@ -187,14 +187,25 @@ export default function App() {
     const survivedSec = state.startedAt > 0
       ? Math.max(0, Math.floor((Date.now() - state.startedAt - state.pausedTotal - livePauseElapsed) / 1000))
       : 0;
-    const result = recordScore(state.mode, {
-      score: finalScore,
-      killed: state.killedSoFar,
-      accuracyPct: Math.round(accuracy * 100),
-      survivedSec,
-    });
-    setLatestHighScoreSnapshot(result);
-  }, [state.phase, state.mode, state.score, state.attempts, state.hits, state.killedSoFar, state.startedAt]);
+    if (state.isDaily) {
+      recordDaily({
+        score: finalScore,
+        killed: state.killedSoFar,
+        accuracyPct: Math.round(accuracy * 100),
+        survivedSec,
+        bestCombo: state.bestCombo,
+      }, state.dailyDateKey);
+      setLatestHighScoreSnapshot({ isNew: false, previous: 0, rank: null });
+    } else {
+      const result = recordScore(state.mode, {
+        score: finalScore,
+        killed: state.killedSoFar,
+        accuracyPct: Math.round(accuracy * 100),
+        survivedSec,
+      });
+      setLatestHighScoreSnapshot(result);
+    }
+  }, [state.phase, state.mode, state.score, state.attempts, state.hits, state.killedSoFar, state.startedAt, state.isDaily, state.dailyDateKey, state.bestCombo, state.pausedAt, state.pausedTotal]);
 
   if (!loaded) {
     return (
@@ -225,9 +236,11 @@ export default function App() {
             {t('menu.intro3')}
           </p>
 
+          <DailyChallengeCard onStart={() => { unlockAudio(); playStart(); startDaily(); }} />
+
           <div style={{
             display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: 10, marginTop: 22,
+            gap: 10, marginTop: 12,
           }}>
             {(['add', 'sub', 'mul', 'div'] as EquationKind[]).map(mode => {
               const meta = MODE_META[mode];
@@ -325,11 +338,13 @@ export default function App() {
         <MuteToggle muted={muted} onToggle={() => { unlockAudio(); const next = !muted; setMuted(next); setMutedState(next); }} />
         <div style={{ textAlign: 'center', maxWidth: 360, padding: 24 }}>
           <h1 style={{ fontSize: 28, margin: 0, color: '#f87171' }}>
-            {t('over.gameover')}
+            {state.isDaily ? '🎯 Daily — Game Over' : t('over.gameover')}
           </h1>
           <div style={{ marginTop: 18, fontSize: 14, color: 'rgba(255,255,255,0.78)', lineHeight: 1.7 }}>
             <div>
               {MODE_META[state.mode].glyph} {t(`kind.${state.mode}` as 'kind.add')}
+              {state.isDaily && <span style={{ opacity: 0.5, margin: '0 6px' }}>·</span>}
+              {state.isDaily && <span style={{ color: '#fbbf24', fontWeight: 700 }}>{state.dailyDateKey}</span>}
               <span style={{ opacity: 0.5, margin: '0 6px' }}>·</span>
               {survivedSec}s
             </div>
@@ -342,7 +357,7 @@ export default function App() {
                 = {state.score} × {accuracy}%
               </span>
             </div>
-            {hsSnap && hsSnap.isNew && (
+            {hsSnap && hsSnap.isNew && !state.isDaily && (
               <div style={{
                 marginTop: 8, fontSize: 12, fontWeight: 800,
                 color: '#34d399',
@@ -353,6 +368,22 @@ export default function App() {
                 ⭐ NEW BEST · prev {hsSnap.previous}
               </div>
             )}
+            {state.isDaily && (() => {
+              const todayBest = getDailyBest(state.dailyDateKey);
+              if (!todayBest) return null;
+              const isToday = todayBest.score === finalScore && todayBest.bestCombo === state.bestCombo;
+              return (
+                <div style={{
+                  marginTop: 8, fontSize: 12, fontWeight: 800,
+                  color: isToday ? '#34d399' : '#fbbf24',
+                  background: isToday ? 'rgba(16,185,129,0.15)' : 'rgba(251,191,36,0.12)',
+                  border: `1px solid ${isToday ? 'rgba(16,185,129,0.4)' : 'rgba(251,191,36,0.4)'}`,
+                  borderRadius: 8, padding: '6px 12px', display: 'inline-block',
+                }}>
+                  {isToday ? '⭐ NEW DAILY BEST' : `today's best · ${todayBest.score}`}
+                </div>
+              );
+            })()}
             {hsSnap && !hsSnap.isNew && hsSnap.rank && (
               <div style={{ marginTop: 6, fontSize: 11, color: '#fbbf24', fontWeight: 700 }}>
                 Top 10 · ranked #{hsSnap.rank} (best {hsSnap.previous})
@@ -365,7 +396,10 @@ export default function App() {
             )}
           </div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 22, flexWrap: 'wrap' }}>
-            <button onClick={() => startGame(state.mode)} style={primaryBtn(MODE_META[state.mode].color)}>
+            <button
+              onClick={() => state.isDaily ? startDaily() : startGame(state.mode)}
+              style={primaryBtn(MODE_META[state.mode].color)}
+            >
               ↻ Retry
             </button>
             <button
@@ -982,6 +1016,59 @@ function secondaryBtn(): React.CSSProperties {
     fontWeight: 700,
     cursor: 'pointer',
   };
+}
+
+function DailyChallengeCard({ onStart }: { onStart: () => void }) {
+  const today = dateKey();
+  const mode = dailyKindForDate();
+  const meta = MODE_META[mode];
+  const best = getDailyBest(today);
+  return (
+    <button
+      onClick={onStart}
+      style={{
+        marginTop: 18,
+        width: '100%',
+        background: `linear-gradient(120deg, ${meta.color}88, ${meta.color}44)`,
+        border: `1.5px solid ${meta.color}`,
+        borderRadius: 14,
+        padding: '14px 16px',
+        color: 'white',
+        cursor: 'pointer',
+        textAlign: 'left',
+        boxShadow: `0 6px 18px ${meta.color}55`,
+      }}
+      className="nd-btn"
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            🎯 Today's Challenge
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 800, marginTop: 2 }}>
+            {meta.glyph} mode · {today}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          {best ? (
+            <>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>YOUR BEST</div>
+              <div style={{ fontSize: 18, fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", color: '#fbbf24' }}>
+                {best.score}
+              </div>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.55)' }}>
+                {best.survivedSec}s · {best.accuracyPct}%
+              </div>
+            </>
+          ) : (
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 700 }}>
+              ▶ Play
+            </div>
+          )}
+        </div>
+      </div>
+    </button>
+  );
 }
 
 function DonationFooter() {

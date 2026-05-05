@@ -50,10 +50,12 @@ export interface GameState {
   reachedBaseSoFar: number;
   attempts: number;
   hits: number;
-  combo: number;            // consecutive hits without a miss/lifeloss
-  bestCombo: number;        // best combo this run
+  combo: number;
+  bestCombo: number;
   lastSpawnAt: number;
-  startedAt: number;        // epoch ms when run started; 0 if not started
-  pausedAt: number;         // epoch ms; 0 if not currently paused
-  pausedTotal: number;      // accumulated paused time in ms
+  startedAt: number;
+  pausedAt: number;
+  pausedTotal: number;
+  isDaily: boolean;         // current run is the daily challenge
+  dailyDateKey: string;     // 'YYYY-MM-DD' UTC for the daily seed
 }

@@ -1,10 +1,10 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { EquationKind, GameState } from './types';
 import {
-  createInitialState, startEndlessRun, pauseGame, resumeGame,
+  createInitialState, startEndlessRun, startDailyRun, pauseGame, resumeGame,
   spawnEnemy, tickEnemies, refillPool,
   tapPoolEntry, dropIntoSlot, untapEquationSlot, clearEquation, submitEquation,
-  getStage,
+  getStage, mulberry32, dailySeed,
 } from './engine';
 
 const TICK_MS = 100;
@@ -23,12 +23,24 @@ let flashCounter = 0;
 export function useGameLoop() {
   const [state, setState] = useState<GameState>(() => createInitialState());
   const [flashes, setFlashes] = useState<FlashEvent[]>([]);
+  const rngRef = useRef<() => number>(Math.random);
 
   const startGame = useCallback((mode: EquationKind = 'add') => {
     const now = Date.now();
+    rngRef.current = Math.random;
     setState(s => {
-      const fresh = startEndlessRun(s, mode, now);
-      return spawnEnemy(fresh, now);
+      const fresh = startEndlessRun(s, mode, now, rngRef.current);
+      return spawnEnemy(fresh, now, rngRef.current);
+    });
+    setFlashes([]);
+  }, []);
+
+  const startDaily = useCallback(() => {
+    const now = Date.now();
+    rngRef.current = mulberry32(dailySeed());
+    setState(s => {
+      const fresh = startDailyRun(s, now, rngRef.current);
+      return spawnEnemy(fresh, now, rngRef.current);
     });
     setFlashes([]);
   }, []);
@@ -58,13 +70,13 @@ export function useGameLoop() {
         if (!stage) return prev;
 
         let next = prev;
-        next = refillPool(next, now);
+        next = refillPool(next, now, rngRef.current);
         next = tickEnemies(next, now);
         if (
           next.phase === 'playing' &&
           now - next.lastSpawnAt >= stage.spawnIntervalMs
         ) {
-          next = spawnEnemy(next, now);
+          next = spawnEnemy(next, now, rngRef.current);
         }
         return next;
       });
@@ -121,5 +133,5 @@ export function useGameLoop() {
     return () => clearTimeout(id);
   }, [flashes]);
 
-  return { state, flashes, startGame, restart, togglePause, tap, drop, untap, clear, submit };
+  return { state, flashes, startGame, startDaily, restart, togglePause, tap, drop, untap, clear, submit };
 }

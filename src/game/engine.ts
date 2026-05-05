@@ -163,6 +163,8 @@ export function createInitialState(rng: () => number = Math.random): GameState {
     startedAt: 0,
     pausedAt: 0,
     pausedTotal: 0,
+    isDaily: false,
+    dailyDateKey: '',
   };
 }
 
@@ -190,7 +192,70 @@ export function startEndlessRun(s: GameState, mode: EquationKind, now: number, r
     startedAt: now,
     pausedAt: 0,
     pausedTotal: 0,
+    isDaily: false,
+    dailyDateKey: '',
   };
+}
+
+export function startDailyRun(s: GameState, now: number, rng: () => number = Math.random): GameState {
+  const mode = dailyKindForDate();
+  const stage = pickTierForMode(mode, 0);
+  const bal = getBalance();
+  return {
+    ...s,
+    phase: 'playing',
+    mode,
+    stageIndex: stage.index,
+    lives: bal.startingLives,
+    score: 0,
+    pool: makeFreshPool(stage, rng),
+    equation: makeEquationSlots(stage),
+    enemies: [],
+    spawnedSoFar: 0,
+    killedSoFar: 0,
+    reachedBaseSoFar: 0,
+    attempts: 0,
+    hits: 0,
+    combo: 0,
+    bestCombo: 0,
+    lastSpawnAt: 0,
+    startedAt: now,
+    pausedAt: 0,
+    pausedTotal: 0,
+    isDaily: true,
+    dailyDateKey: dateKey(),
+  };
+}
+
+// ── Seedable RNG (mulberry32) for daily challenge ─────────────
+
+export function mulberry32(seed: number): () => number {
+  let t = seed >>> 0;
+  return () => {
+    t = (t + 0x6D2B79F5) >>> 0;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export function dateKey(date: Date = new Date()): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+}
+
+export function dailySeed(date: Date = new Date()): number {
+  const k = dateKey(date);
+  let h = 5381;
+  for (let i = 0; i < k.length; i++) h = ((h * 33) ^ k.charCodeAt(i)) >>> 0;
+  return h >>> 0;
+}
+
+// Sun→Sat rotation. Mixed every Friday is harder to test deterministically;
+// keeping it to a single op keeps spawning solvable.
+const DAILY_KIND_BY_DAY: EquationKind[] = ['add', 'add', 'sub', 'mul', 'div', 'add', 'sub'];
+
+export function dailyKindForDate(date: Date = new Date()): EquationKind {
+  return DAILY_KIND_BY_DAY[date.getUTCDay()];
 }
 
 export function pauseGame(s: GameState, now: number): GameState {
@@ -491,6 +556,43 @@ export function getLeaderboard(mode: EquationKind): LeaderboardEntry[] {
   } catch {
     return [];
   }
+}
+
+// ── Daily Challenge storage ───────────────────────────────────
+
+const DAILY_KEY = (key: string) => `nd_daily_${key}`;
+
+export interface DailyEntry {
+  score: number;
+  killed: number;
+  accuracyPct: number;
+  survivedSec: number;
+  bestCombo: number;
+  ts: number;
+}
+
+export function getDailyBest(key: string = dateKey()): DailyEntry | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(DAILY_KEY(key));
+    return raw ? JSON.parse(raw) as DailyEntry : null;
+  } catch {
+    return null;
+  }
+}
+
+export function recordDaily(
+  entry: Omit<DailyEntry, 'ts'>,
+  key: string = dateKey(),
+): { isNew: boolean; previous: DailyEntry | null } {
+  if (typeof window === 'undefined') return { isNew: false, previous: null };
+  const prev = getDailyBest(key);
+  const isNew = !prev || entry.score > prev.score;
+  if (isNew) {
+    const fullEntry: DailyEntry = { ...entry, ts: Date.now() };
+    window.localStorage.setItem(DAILY_KEY(key), JSON.stringify(fullEntry));
+  }
+  return { isNew, previous: prev };
 }
 
 export function recordScore(
