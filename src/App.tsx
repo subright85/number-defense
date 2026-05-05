@@ -228,83 +228,55 @@ export default function App() {
       <div style={fullCenterStyle}>
         <LocaleToggle locale={locale} onToggle={toggleLocale} />
         <MuteToggle muted={muted} onToggle={() => { unlockAudio(); const next = !muted; setMuted(next); setMutedState(next); }} />
-        <div style={{ textAlign: 'center', maxWidth: 380, padding: 24 }}>
-          <Title taglineLabel={t('tagline')} />
-          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, lineHeight: 1.6, marginTop: 14 }}>
-            {t('menu.intro1')}<br />
-            {t('menu.intro2')}<br />
-            {t('menu.intro3')}
-          </p>
+        <div style={{
+          maxWidth: 420, width: '100%', padding: '32px 20px 24px',
+          display: 'flex', flexDirection: 'column', gap: 16,
+        }}>
+          <HeroBlock taglineLabel={t('tagline')} />
+
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8, marginTop: 6,
+            color: 'rgba(255,255,255,0.55)', fontSize: 12, lineHeight: 1.5,
+            background: 'rgba(255,255,255,0.025)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 12, padding: '10px 12px',
+          }}>
+            <span style={{ fontSize: 18 }}>🎈</span>
+            <span>
+              {t('menu.intro1')}{' '}{t('menu.intro2')}
+            </span>
+          </div>
 
           <DailyChallengeCard onStart={() => { unlockAudio(); playStart(); startDaily(); }} />
 
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: 10, marginTop: 12,
-          }}>
-            {(['add', 'sub', 'mul', 'div'] as EquationKind[]).map(mode => {
-              const meta = MODE_META[mode];
-              const hs = getHighScore(mode);
-              return (
-                <button
-                  key={mode}
-                  onClick={() => { if (meta.available) { unlockAudio(); playStart(); startGame(mode); } }}
-                  disabled={!meta.available}
-                  style={{
-                    background: meta.available ? meta.color : 'rgba(255,255,255,0.04)',
-                    border: meta.available
-                      ? `1.5px solid ${meta.color}`
-                      : '1.5px dashed rgba(255,255,255,0.18)',
-                    color: 'white',
-                    padding: '14px 12px',
-                    borderRadius: 14,
-                    fontWeight: 800,
-                    cursor: meta.available ? 'pointer' : 'not-allowed',
-                    opacity: meta.available ? 1 : 0.5,
-                    boxShadow: meta.available ? `0 4px 14px ${meta.color}55` : 'none',
-                    textAlign: 'center',
-                    transition: 'transform 100ms, box-shadow 100ms',
-                  }}
-                  className={meta.available ? 'nd-btn' : undefined}
-                >
-                  <div style={{ fontSize: 28, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{meta.glyph}</div>
-                  <div style={{ fontSize: 12, marginTop: 4, opacity: 0.92 }}>
-                    {t(`kind.${mode}` as 'kind.add' | 'kind.sub' | 'kind.mul' | 'kind.div')}
-                  </div>
-                  <div style={{
-                    fontSize: 10,
-                    marginTop: 6,
-                    opacity: 0.85,
-                    fontFamily: "'JetBrains Mono', monospace",
-                  }}>
-                    {meta.available ? `BEST · ${hs}` : t('menu.locked' as never) || 'soon'}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          <button
-            onClick={() => setShowLeaderboard('add')}
-            style={{
-              marginTop: 16,
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.18)',
-              color: 'rgba(255,255,255,0.85)',
-              padding: '8px 16px',
-              borderRadius: 999,
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: 'pointer',
-              letterSpacing: '0.02em',
-            }}
-            className="nd-btn"
-          >
-            🏆 Leaderboard
-          </button>
-
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 14 }}>
-            Pick a mode. Survive as long as you can.
+          <div>
+            <div style={{
+              fontSize: 10, color: 'rgba(255,255,255,0.45)',
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              fontWeight: 700, marginBottom: 8, paddingLeft: 4,
+            }}>
+              Endless Modes
+            </div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10,
+            }}>
+              {(['add', 'sub', 'mul', 'div'] as EquationKind[]).map(mode => {
+                const meta = MODE_META[mode];
+                const hs = getHighScore(mode);
+                return (
+                  <ModeCard
+                    key={mode}
+                    glyph={meta.glyph}
+                    color={meta.color}
+                    label={t(`kind.${mode}` as 'kind.add' | 'kind.sub' | 'kind.mul' | 'kind.div')}
+                    best={hs}
+                    available={meta.available}
+                    onClick={() => { if (meta.available) { unlockAudio(); playStart(); startGame(mode); } }}
+                    onLeaderboard={() => setShowLeaderboard(mode)}
+                  />
+                );
+              })}
+            </div>
           </div>
 
           <DonationFooter />
@@ -1068,6 +1040,127 @@ function DailyChallengeCard({ onStart }: { onStart: () => void }) {
         </div>
       </div>
     </button>
+  );
+}
+
+function HeroBlock({ taglineLabel }: { taglineLabel: string }) {
+  return (
+    <div style={{
+      position: 'relative',
+      textAlign: 'center',
+      paddingTop: 12, paddingBottom: 4,
+    }}>
+      {/* Floating mini balloons left + right */}
+      <div style={{
+        position: 'absolute', left: '6%', top: 0,
+        animation: 'balloonBob 2.6s ease-in-out infinite',
+      }}>
+        <Balloon number={3} variant={1} />
+      </div>
+      <div style={{
+        position: 'absolute', right: '6%', top: 14,
+        animation: 'balloonBob 3.2s ease-in-out infinite 0.4s',
+      }}>
+        <Balloon number={5} variant={3} />
+      </div>
+
+      <h1 style={{
+        margin: 0,
+        fontSize: 38,
+        fontWeight: 900,
+        letterSpacing: '-0.025em',
+        background: 'linear-gradient(90deg, #818cf8, #f472b6, #fbbf24)',
+        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+        backgroundClip: 'text',
+        textShadow: '0 4px 24px rgba(0,0,0,0.4)',
+        lineHeight: 1.05,
+      }}>
+        Number<br />Defense
+      </h1>
+      <div style={{
+        marginTop: 6,
+        fontSize: 11, color: 'rgba(255,255,255,0.5)',
+        letterSpacing: '0.12em', textTransform: 'uppercase',
+        fontWeight: 700,
+      }}>
+        {taglineLabel}
+      </div>
+    </div>
+  );
+}
+
+function ModeCard({
+  glyph, color, label, best, available, onClick, onLeaderboard,
+}: {
+  glyph: string; color: string; label: string;
+  best: number; available: boolean;
+  onClick: () => void; onLeaderboard: () => void;
+}) {
+  const hasScore = best > 0;
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={onClick}
+        disabled={!available}
+        style={{
+          width: '100%',
+          background: available
+            ? `linear-gradient(140deg, ${color}cc 0%, ${color}77 100%)`
+            : 'rgba(255,255,255,0.04)',
+          border: available
+            ? `1.5px solid ${color}`
+            : '1.5px dashed rgba(255,255,255,0.18)',
+          color: 'white',
+          padding: '16px 12px 14px',
+          borderRadius: 14,
+          fontWeight: 800,
+          cursor: available ? 'pointer' : 'not-allowed',
+          opacity: available ? 1 : 0.45,
+          boxShadow: available ? `0 6px 18px ${color}55, inset 0 1px 0 rgba(255,255,255,0.18)` : 'none',
+          textAlign: 'center',
+          transition: 'transform 100ms, box-shadow 100ms, filter 100ms',
+        }}
+        className={available ? 'nd-btn' : undefined}
+      >
+        <div style={{
+          fontSize: 36,
+          fontFamily: "'JetBrains Mono', monospace",
+          lineHeight: 1,
+          textShadow: '0 2px 6px rgba(0,0,0,0.3)',
+        }}>{glyph}</div>
+        <div style={{ fontSize: 12, marginTop: 6, opacity: 0.95, letterSpacing: '0.02em' }}>
+          {label}
+        </div>
+        <div style={{
+          fontSize: 10,
+          marginTop: 8,
+          opacity: hasScore ? 0.95 : 0.55,
+          fontFamily: "'JetBrains Mono', monospace",
+          letterSpacing: '0.06em',
+        }}>
+          {available
+            ? (hasScore ? `★ ${best}` : 'PLAY')
+            : 'SOON'}
+        </div>
+      </button>
+      {available && hasScore && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onLeaderboard(); }}
+          title="Top 10"
+          style={{
+            position: 'absolute', top: 6, right: 6,
+            width: 22, height: 22, borderRadius: 11,
+            background: 'rgba(0,0,0,0.35)',
+            border: '1px solid rgba(255,255,255,0.25)',
+            color: 'white', cursor: 'pointer',
+            fontSize: 10, padding: 0,
+          }}
+          className="nd-btn"
+        >
+          🏆
+        </button>
+      )}
+    </div>
   );
 }
 
