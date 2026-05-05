@@ -1,4 +1,14 @@
-# React + TypeScript + Vite
+# Number Defense
+
+Math tower defense game — place towers, solve waves, survive.
+
+## Credits
+
+Tower sprites: [Kenney Tower Defense (Top-Down)](https://kenney.nl/assets/tower-defense-top-down) by Kenney.nl — CC0 Public Domain
+
+---
+
+# React + TypeScript + Vite (template)
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
