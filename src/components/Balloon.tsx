@@ -1,110 +1,115 @@
-// SVG balloon component — replaces gradient circles for v2.
-// Six color variants chosen by hashing the enemy id.
-//
-// The balloon is drawn with a slight teardrop curve for character, plus
-// a highlight, a knot at the bottom, and a curved string trailing down.
-// Sized to fit a 56×72px bounding box (extra space below for the string).
+// PNG-backed balloon — uses Usopp's hand-crafted sprites in public/sprites/balloons/.
+// 6 color variants chosen by hashing the enemy id. Number is overlaid on the
+// white center disc baked into the sprite.
 
 interface BalloonProps {
   number: number;
-  variant: number;       // 0..5
-  danger?: boolean;      // adds red glow
-  popping?: boolean;     // play pop animation
+  variant: number;
+  danger?: boolean;
+  popping?: boolean;
 }
 
-const VARIANTS: Array<{ fill: string; rim: string; highlight: string }> = [
-  { fill: '#f59e0b', rim: '#b45309', highlight: '#fde68a' }, // amber
-  { fill: '#ec4899', rim: '#9d174d', highlight: '#fbcfe8' }, // pink
-  { fill: '#6366f1', rim: '#3730a3', highlight: '#c7d2fe' }, // indigo
-  { fill: '#10b981', rim: '#065f46', highlight: '#a7f3d0' }, // emerald
-  { fill: '#06b6d4', rim: '#0e7490', highlight: '#a5f3fc' }, // cyan
-  { fill: '#f43f5e', rim: '#9f1239', highlight: '#fecdd3' }, // rose
+const SPRITES: string[] = [
+  '/sprites/balloons/yellow.png',
+  '/sprites/balloons/red.png',
+  '/sprites/balloons/orange.png',
+  '/sprites/balloons/green.png',
+  '/sprites/balloons/blue.png',
+  '/sprites/balloons/purple.png',
 ];
 
+// Sprites are 128×160 — display at 60×80 for a 1.5–2× pixel-density bump.
 export const BALLOON_W = 60;
 export const BALLOON_H = 80;
 
 export function Balloon({ number, variant, danger, popping }: BalloonProps) {
-  const v = VARIANTS[((variant % VARIANTS.length) + VARIANTS.length) % VARIANTS.length];
-  const fill = danger ? '#ef4444' : v.fill;
-  const rim = danger ? '#7f1d1d' : v.rim;
-  const highlight = danger ? '#fecaca' : v.highlight;
-
+  const src = SPRITES[((variant % SPRITES.length) + SPRITES.length) % SPRITES.length];
   return (
-    <svg
-      width={BALLOON_W}
-      height={BALLOON_H}
-      viewBox="0 0 60 80"
+    <div
       style={{
-        filter: danger
-          ? 'drop-shadow(0 0 10px rgba(239,68,68,0.8))'
-          : 'drop-shadow(0 4px 6px rgba(0,0,0,0.45))',
+        width: BALLOON_W,
+        height: BALLOON_H,
+        position: 'relative',
         animation: popping
           ? 'balloonPop 220ms ease-out forwards'
           : danger
             ? 'balloonShake 0.7s ease-in-out infinite'
             : 'balloonBob 3s ease-in-out infinite',
-        transformOrigin: '30px 28px',
+        filter: danger
+          ? 'hue-rotate(-30deg) saturate(150%) brightness(0.9) drop-shadow(0 0 10px rgba(239,68,68,0.7))'
+          : 'drop-shadow(0 4px 6px rgba(0,0,0,0.45))',
       }}
     >
-      <defs>
-        <radialGradient id={`bg-${variant}-${danger ? 'd' : 'n'}`} cx="35%" cy="30%" r="65%">
-          <stop offset="0%" stopColor={highlight} />
-          <stop offset="55%" stopColor={fill} />
-          <stop offset="100%" stopColor={rim} />
-        </radialGradient>
-      </defs>
-
-      {/* String */}
-      <path d="M 30 56 Q 28 62 30 68 Q 32 74 30 78" stroke="rgba(0,0,0,0.55)" strokeWidth="0.9" fill="none" strokeLinecap="round" />
-
-      {/* Body — teardrop shape */}
-      <path
-        d="M 30 6
-           C 18 6, 8 14, 8 26
-           C 8 38, 16 50, 25 54
-           L 28 56
-           L 32 56
-           L 35 54
-           C 44 50, 52 38, 52 26
-           C 52 14, 42 6, 30 6 Z"
-        fill={`url(#bg-${variant}-${danger ? 'd' : 'n'})`}
-        stroke={rim}
-        strokeWidth="1"
-        strokeOpacity="0.55"
-      />
-
-      {/* Highlight */}
-      <ellipse cx="22" cy="18" rx="5" ry="8" fill={highlight} fillOpacity="0.55" />
-      <ellipse cx="20" cy="14" rx="2.2" ry="3.4" fill="white" fillOpacity="0.7" />
-
-      {/* Knot */}
-      <polygon points="27,55 33,55 31,60 29,60" fill={rim} />
-
-      {/* Number */}
-      <text
-        x="30"
-        y="32"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fontFamily="'JetBrains Mono', monospace"
-        fontWeight="800"
-        fontSize="18"
-        fill="white"
+      <img
+        src={src}
+        alt=""
+        draggable={false}
         style={{
-          paintOrder: 'stroke',
-          stroke: 'rgba(0,0,0,0.5)',
-          strokeWidth: 1.5,
+          width: '100%', height: '100%',
+          objectFit: 'contain',
+          pointerEvents: 'none',
+          userSelect: 'none',
+        }}
+      />
+      {/* Number overlay */}
+      <div
+        style={{
+          position: 'absolute',
+          // The white disc on the sprite sits roughly at top 24%, centered.
+          top: '24%', left: '50%',
+          transform: 'translateX(-50%)',
+          width: 28, height: 28,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: "'JetBrains Mono', monospace",
+          fontWeight: 800, fontSize: 17,
+          color: '#1f2937',
+          pointerEvents: 'none',
         }}
       >
         {number}
-      </text>
-    </svg>
+      </div>
+    </div>
   );
 }
 
 export function balloonVariantFor(id: string): number {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = ((h << 5) - h + id.charCodeAt(i)) | 0;
-  return Math.abs(h) % VARIANTS.length;
+  return Math.abs(h) % SPRITES.length;
+}
+
+// Animated 6-frame pop sprite (64ms each, 384ms total).
+export const POP_FRAMES = 6;
+export const POP_FRAME_MS = 64;
+export const POP_DURATION_MS = POP_FRAMES * POP_FRAME_MS;
+
+export function PopBurst({ x, y }: { x: number; y: number }) {
+  const SIZE = 80;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: x - SIZE / 2, top: y - SIZE / 2,
+        width: SIZE, height: SIZE,
+        pointerEvents: 'none',
+        zIndex: 6,
+      }}
+    >
+      {Array.from({ length: POP_FRAMES }).map((_, i) => (
+        <img
+          key={i}
+          src={`/sprites/effects/pop_0${i}.png`}
+          alt=""
+          draggable={false}
+          style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%',
+            objectFit: 'contain',
+            opacity: 0,
+            animation: `popFrame ${POP_FRAME_MS}ms linear ${i * POP_FRAME_MS}ms 1`,
+          }}
+        />
+      ))}
+    </div>
+  );
 }

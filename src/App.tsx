@@ -3,7 +3,7 @@ import { loadBalance, getStage, getHighScore, getLeaderboard, recordScore, getDa
 import type { LeaderboardEntry } from './game/engine';
 import { useGameLoop } from './game/useGameLoop';
 import { useT, type Locale } from './i18n';
-import { Balloon, BALLOON_W, BALLOON_H, balloonVariantFor } from './components/Balloon';
+import { Balloon, BALLOON_W, BALLOON_H, balloonVariantFor, PopBurst } from './components/Balloon';
 import { PoolTile } from './components/PoolTile';
 import { BackgroundLayer } from './components/BackgroundLayer';
 import { playPop, playMiss, playLifeLost, playStart, unlockAudio, isMuted, setMuted } from './sfx';
@@ -499,39 +499,13 @@ export default function App() {
           );
         })}
 
-        {/* Particle burst on hit */}
+        {/* Sprite-based pop animation (Usopp 6-frame burst) */}
         {flashes.filter(f => f.kind === 'hit' && f.enemyId && f.enemyProgress !== undefined).map(f => {
           const hashH = (function(){let h=0;const id=f.enemyId!;for(let i=0;i<id.length;i++)h=((h<<5)-h+id.charCodeAt(i))|0;return Math.abs(h);})();
           const xJitter = (hashH % 5) * 22 - 44;
           const cx = LANE_WIDTH / 2 + xJitter;
           const cy = (f.enemyProgress ?? 0) * (LANE_HEIGHT - BALLOON_H - 4) + BALLOON_H / 3;
-          const particleCount = 8;
-          return (
-            <div key={`burst-${f.id}`} style={{ position: 'absolute', left: cx, top: cy, pointerEvents: 'none' }}>
-              {Array.from({ length: particleCount }).map((_, i) => {
-                const angle = (i / particleCount) * Math.PI * 2;
-                const dx = Math.cos(angle) * 26;
-                const dy = Math.sin(angle) * 26;
-                const colors = ['#fde047', '#fb923c', '#f87171', '#fbcfe8', '#a5f3fc', '#86efac'];
-                const color = colors[(hashH + i) % colors.length];
-                return (
-                  <span
-                    key={i}
-                    style={{
-                      position: 'absolute', left: 0, top: 0,
-                      width: 6, height: 6,
-                      borderRadius: '50%',
-                      background: color,
-                      boxShadow: `0 0 6px ${color}`,
-                      ['--dx' as never]: `${dx}px`,
-                      ['--dy' as never]: `${dy}px`,
-                      animation: 'particleBurst 600ms ease-out forwards',
-                    } as React.CSSProperties}
-                  />
-                );
-              })}
-            </div>
-          );
+          return <PopBurst key={`burst-${f.id}`} x={cx} y={cy} />;
         })}
 
         {flashes.map(f => (
