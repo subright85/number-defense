@@ -1094,6 +1094,19 @@ function DonationFooter() {
         >
           ☕ Buy me a coffee
         </a>
+        <a
+          href="https://github.com/sponsors/subright85"
+          target="_blank" rel="noopener noreferrer"
+          style={{
+            background: 'rgba(236, 72, 153, 0.18)',
+            color: '#fbcfe8',
+            padding: '4px 10px', borderRadius: 999,
+            fontSize: 11, fontWeight: 700, textDecoration: 'none',
+            border: '1px solid rgba(236, 72, 153, 0.5)',
+          }}
+        >
+          ❤ GitHub Sponsor
+        </a>
       </div>
     </div>
   );
