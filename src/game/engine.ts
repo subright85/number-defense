@@ -9,8 +9,12 @@ export async function loadBalance(): Promise<void> {
 }
 
 export function getBalance() {
-  if (!_balance) throw new Error('balance not loaded');
+  if (!_balance) throw new Error('balance not loaded — call loadBalance() first');
   return _balance;
+}
+
+export function isBalanceLoaded(): boolean {
+  return _balance !== null;
 }
 
 export function getTowerDef(tier: Tower['tier']): TowerDef {
@@ -36,7 +40,7 @@ function mkEnemy(waveDef: WaveDef, rng: () => number): Enemy {
 }
 
 export function createInitialState(_rng: () => number = Math.random): GameState {
-  const bal = getBalance();
+  const bal = _balance ?? { startingLives: 20, startingGold: 150 };
   return {
     phase: 'prep',
     grid: INITIAL_GRID.map(row => row.map(c => ({ ...c }))),
@@ -55,8 +59,9 @@ export function startWave(s: GameState, rng: () => number = Math.random): GameSt
   const nextWave = s.wave + 1;
   const waveDef = getWaveDef(nextWave);
   if (!waveDef) return { ...s, phase: 'victory' };
-  const pending: Enemy[] = Array.from({ length: waveDef.enemyCount }, () => mkEnemy(waveDef, rng));
-  return { ...s, phase: 'wave', wave: nextWave, pendingEnemies: pending, turn: 0 };
+  const all: Enemy[] = Array.from({ length: waveDef.enemyCount }, () => mkEnemy(waveDef, rng));
+  const [first, ...rest] = all;
+  return { ...s, phase: 'wave', wave: nextWave, enemies: [first], pendingEnemies: rest, turn: 0 };
 }
 
 function chebyshev(ax: number, ay: number, bx: number, by: number) {

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { loadBalance, getTowerDef } from './game/engine';
+import { loadBalance, getTowerDef, isBalanceLoaded } from './game/engine';
 import { useGameLoop } from './game/useGameLoop';
 import { GRID_SIZE, PATH_COORDS, SPAWN_COORD, BASE_COORD } from './game/map';
 import type { Tower } from './game/types';
 
-const CELL_PX = 36;
+const CELL_PX = 48;
 
 const TIER_COLORS: Record<number, string> = {
   1: '#6366f1', 2: '#8b5cf6', 3: '#ec4899', 4: '#f59e0b', 5: '#ef4444',
@@ -17,10 +17,15 @@ function coordsAt(pathIdx: number): [number, number] {
 export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [selectedTier, setSelectedTier] = useState<Tower['tier']>(1);
-  const { state, startNextWave, nextTurn, buyTower, restart } = useGameLoop();
+  const { state, startNextWave, nextTurn, buyTower, restart, autoPlay, toggleAutoPlay } = useGameLoop();
 
   useEffect(() => {
-    loadBalance().then(() => setLoaded(true));
+    const init = () => loadBalance().then(() => { restart(); setLoaded(true); });
+    init();
+    const check = setInterval(() => {
+      if (!isBalanceLoaded()) init();
+    }, 2000);
+    return () => clearInterval(check);
   }, []);
 
   if (!loaded) {
@@ -36,14 +41,47 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-start h-full bg-[#0a0a1a] text-white p-3 gap-3">
+    <div className="flex flex-col items-center justify-start min-h-screen bg-[#0a0a1a] text-white p-3 gap-3">
 
       {/* HUD */}
-      <div className="flex gap-6 text-sm font-mono">
+      <div className="flex items-center gap-6 text-sm font-mono flex-wrap justify-center">
         <span>❤️ {state.lives}</span>
         <span>💰 {state.gold}</span>
         <span>🌊 Wave {state.wave}</span>
         <span>⭐ {state.score}</span>
+      </div>
+
+      {/* Controls */}
+      <div className="flex items-center gap-2 flex-wrap justify-center">
+        {state.phase === 'prep' && (
+          <button onClick={startNextWave} className="bg-emerald-600 hover:bg-emerald-500 px-3 py-1 rounded text-sm font-bold">
+            ▶ Wave {state.wave + 1}
+          </button>
+        )}
+        {state.phase === 'wave' && (
+          <>
+            <button onClick={nextTurn} className="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-sm font-bold">
+              ⏭ Step
+            </button>
+            <button
+              onClick={toggleAutoPlay}
+              className={`px-3 py-1 rounded text-sm font-bold ${autoPlay ? 'bg-orange-500 hover:bg-orange-400' : 'bg-slate-600 hover:bg-slate-500'}`}
+            >
+              {autoPlay ? '⏸ Pause' : '▶▶ Auto'}
+            </button>
+          </>
+        )}
+        {(state.phase === 'gameover' || state.phase === 'victory') && (
+          <>
+            <span className="font-bold">{state.phase === 'victory' ? '🎉 Victory!' : '💀 Game Over'}</span>
+            <button onClick={restart} className="bg-gray-600 hover:bg-gray-500 px-3 py-1 rounded text-sm font-bold">Restart</button>
+          </>
+        )}
+        {state.phase === 'wave' && (
+          <span className="text-xs text-gray-400 font-mono">
+            {state.enemies.length} on field · {state.pendingEnemies.length} queued
+          </span>
+        )}
       </div>
 
       {/* Grid */}
@@ -76,13 +114,35 @@ export default function App() {
                 {isSpawn && <span style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>▶</span>}
                 {isBase  && <span style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>🏰</span>}
                 {tower && !isSpawn && !isBase && (
-                  <div style={{ position:'absolute', inset:2, borderRadius:4, background: TIER_COLORS[tower.tier], display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:700 }}>
+                  <div style={{
+                    position:'absolute', inset:2, borderRadius:4,
+                    background: TIER_COLORS[tower.tier],
+                    opacity: tower.cooldown > 0 ? 0.55 : 1,
+                    display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:700,
+                  }}>
                     T{tower.tier}
+                    {tower.cooldown > 0 && (
+                      <span style={{ position:'absolute', bottom:2, right:3, fontSize:7, color:'rgba(255,255,255,0.8)' }}>
+                        {tower.cooldown}
+                      </span>
+                    )}
                   </div>
                 )}
                 {enemy && (
-                  <div style={{ position:'absolute', inset:2, borderRadius:'50%', background:'#ef4444', display:'flex', alignItems:'center', justifyContent:'center', fontSize:9 }}>
-                    {enemy.value}
+                  <div style={{
+                    position:'absolute', inset:2, borderRadius:'50%', background:'#dc2626',
+                    display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+                    fontSize:10, fontWeight:700, overflow:'hidden',
+                  }}>
+                    <span style={{ lineHeight:1 }}>{enemy.value}</span>
+                    {/* HP bar */}
+                    <div style={{ position:'absolute', bottom:3, left:5, right:5, height:3, background:'rgba(0,0,0,0.4)', borderRadius:2 }}>
+                      <div style={{
+                        height:'100%', borderRadius:2,
+                        background: enemy.hp / enemy.maxHp > 0.5 ? '#4ade80' : '#f59e0b',
+                        width: `${Math.max(0, (enemy.hp / enemy.maxHp)) * 100}%`,
+                      }} />
+                    </div>
                   </div>
                 )}
               </div>
@@ -92,49 +152,36 @@ export default function App() {
       </div>
 
       {/* Tower selector */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap justify-center">
         {([1,2,3,4,5] as Tower['tier'][]).map(tier => {
           const def = getTowerDef(tier);
           return (
             <button
               key={tier}
               onClick={() => setSelectedTier(tier)}
-              style={{ background: selectedTier === tier ? TIER_COLORS[tier] : '#1f2937', border: `2px solid ${TIER_COLORS[tier]}`, borderRadius:8, padding:'4px 8px', color:'white', fontSize:11, fontWeight:700, cursor:'pointer' }}
+              style={{
+                background: selectedTier === tier ? TIER_COLORS[tier] : '#1f2937',
+                border: `2px solid ${TIER_COLORS[tier]}`,
+                borderRadius:8, padding:'4px 8px', color:'white', cursor:'pointer',
+                textAlign:'center', minWidth:60,
+              }}
             >
-              T{tier}<br/><span style={{fontWeight:400}}>${def.cost}</span>
+              <div style={{ fontSize:12, fontWeight:700 }}>T{tier}</div>
+              <div style={{ fontSize:10, color:'rgba(255,255,255,0.7)' }}>${def.cost}</div>
+              <div style={{ fontSize:9, color:'rgba(255,255,255,0.55)', marginTop:2 }}>
+                ⚔{def.damage} ◎{def.range} ⏱{def.cooldown}
+              </div>
             </button>
           );
         })}
       </div>
 
-      {/* Controls */}
-      <div className="flex gap-3">
-        {state.phase === 'prep' && (
-          <button onClick={startNextWave} className="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded text-sm font-bold">
-            ▶ Start Wave {state.wave + 1}
-          </button>
-        )}
-        {state.phase === 'wave' && (
-          <button onClick={nextTurn} className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm font-bold">
-            ⏭ Next Turn
-          </button>
-        )}
-        {(state.phase === 'gameover' || state.phase === 'victory') && (
-          <>
-            <div className="text-lg font-bold">{state.phase === 'victory' ? '🎉 Victory!' : '💀 Game Over'}</div>
-            <button onClick={restart} className="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded text-sm font-bold">
-              Restart
-            </button>
-          </>
-        )}
+      {/* Legend */}
+      <div className="text-xs text-gray-500 font-mono flex gap-4">
+        <span>⚔ damage</span>
+        <span>◎ range</span>
+        <span>⏱ cooldown (turns)</span>
       </div>
-
-      {/* Enemy list */}
-      {state.enemies.length > 0 && (
-        <div className="text-xs text-gray-400">
-          {state.enemies.length} enemies — {state.pendingEnemies.length} queued
-        </div>
-      )}
     </div>
   );
 }
