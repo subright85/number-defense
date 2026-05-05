@@ -52,6 +52,7 @@ export function createInitialState(_rng: () => number = Math.random): GameState 
     turn: 0,
     pendingEnemies: [],
     score: 0,
+    ageBucket: '7-9',
   };
 }
 

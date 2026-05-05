@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { loadBalance, getTowerDef, isBalanceLoaded } from './game/engine';
 import { useGameLoop } from './game/useGameLoop';
 import { GRID_SIZE, PATH_COORDS, SPAWN_COORD, BASE_COORD } from './game/map';
-import type { Tower, Enemy } from './game/types';
+import type { AgeBucket, Tower, Enemy } from './game/types';
 
 const CELL_PX = 48;
 const GRID_PADDING = 6;
@@ -51,39 +51,46 @@ function Pill({ icon, label, accent }: { icon: string; label: string | number; a
       border: `1px solid ${accent}33`,
       fontSize: 13, fontWeight: 600,
       color: '#f5f5fa',
-      fontVariantNumeric: 'tabular-nums',
     }}>
       <span aria-hidden style={{ filter: `drop-shadow(0 0 4px ${accent}88)` }}>{icon}</span>
-      <span>{label}</span>
+      <span className="nd-pill-num">{label}</span>
     </span>
   );
 }
 
-function EnemyToken({ enemy, x, y, stackOffset }: { enemy: Enemy; x: number; y: number; stackOffset: number }) {
-  const left = GRID_PADDING + x * CELL_PX;
-  const top = GRID_PADDING + y * CELL_PX + stackOffset;
+const ENEMY_SIZE = 30;
+
+function EnemyToken({ enemy, x, y, stackX, stackY }: { enemy: Enemy; x: number; y: number; stackX: number; stackY: number }) {
+  // Center the enemy token in its cell, then apply stack offset
+  const cellCenterX = GRID_PADDING + x * CELL_PX + CELL_PX / 2;
+  const cellCenterY = GRID_PADDING + y * CELL_PX + CELL_PX / 2;
+  const left = cellCenterX - ENEMY_SIZE / 2 + stackX;
+  const top = cellCenterY - ENEMY_SIZE / 2 + stackY;
   return (
     <div style={{
       position: 'absolute', left, top,
-      width: CELL_PX, height: CELL_PX,
+      width: ENEMY_SIZE, height: ENEMY_SIZE,
       transition: 'left 280ms linear, top 280ms linear',
       pointerEvents: 'none',
       zIndex: 5,
     }}>
       <div style={{
-        position: 'absolute', inset: 4,
+        width: '100%', height: '100%',
         borderRadius: '50%',
         background: 'radial-gradient(circle at 30% 30%, #fca5a5, #dc2626 60%, #7f1d1d 100%)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        fontSize: 10, fontWeight: 800, color: 'white',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 9, fontWeight: 800, color: 'white',
         animation: 'enemyPulse 1.4s ease-in-out infinite',
+        position: 'relative',
       }}>
-        <span style={{ lineHeight: 1, fontSize: 9, textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
+        <span className="nd-pill-num" style={{ lineHeight: 1, fontSize: 8, textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
           {makeProblem(enemy.value)}
         </span>
+        {/* HP bar — outside the circle, above */}
         <div style={{
-          position: 'absolute', bottom: 2, left: 4, right: 4, height: 3,
-          background: 'rgba(0,0,0,0.5)', borderRadius: 2, overflow: 'hidden',
+          position: 'absolute', top: -5, left: 1, right: 1, height: 3,
+          background: 'rgba(0,0,0,0.55)', borderRadius: 2, overflow: 'hidden',
+          border: '1px solid rgba(0,0,0,0.4)',
         }}>
           <div style={{
             height: '100%',
@@ -105,7 +112,7 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [selectedTier, setSelectedTier] = useState<Tower['tier']>(1);
   const [hoverCell, setHoverCell] = useState<[number, number] | null>(null);
-  const { state, paused, damageEvents, startNextWave, nextTurn, buyTower, restart, togglePause } = useGameLoop();
+  const { state, paused, damageEvents, startNextWave, nextTurn, buyTower, restart, togglePause, setAgeBucket } = useGameLoop();
 
   useEffect(() => {
     const init = () => loadBalance().then(() => { restart(); setLoaded(true); });
@@ -176,25 +183,47 @@ export default function App() {
         <Pill icon="⭐" label={state.score} accent="#a78bfa" />
       </div>
 
+      {/* Age selector — wave 0 only */}
+      {state.phase === 'prep' && state.wave === 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Age:</span>
+          {(['7-9', '10-12'] as AgeBucket[]).map(b => (
+            <button
+              key={b}
+              onClick={() => setAgeBucket(b)}
+              style={{
+                padding: '3px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
+                cursor: 'pointer', border: 'none',
+                background: state.ageBucket === b ? '#818cf8' : 'rgba(255,255,255,0.08)',
+                color: state.ageBucket === b ? 'white' : 'rgba(255,255,255,0.5)',
+              }}
+            >
+              {b}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
         {state.phase === 'prep' && (
-          <button onClick={startNextWave} style={btnPrimary('#10b981')}>
+          <button className="nd-btn" onClick={startNextWave} style={btnPrimary('#10b981')}>
             ▶ Start Wave {state.wave + 1}
           </button>
         )}
         {state.phase === 'wave' && (
           <>
             <button
+              className="nd-btn"
               onClick={togglePause}
               style={btnPrimary(paused ? '#10b981' : '#f59e0b')}
             >
               {paused ? '▶ Resume' : '⏸ Pause'}
             </button>
             {paused && (
-              <button onClick={nextTurn} style={btnSecondary()}>⏭ Step</button>
+              <button className="nd-btn" onClick={nextTurn} style={btnSecondary()}>⏭ Step</button>
             )}
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontVariantNumeric: 'tabular-nums' }}>
+            <span className="nd-pill-num" style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
               {state.enemies.length} on field · {state.pendingEnemies.length} queued
             </span>
           </>
@@ -204,20 +233,13 @@ export default function App() {
             <span style={{ fontWeight: 700, fontSize: 16 }}>
               {state.phase === 'victory' ? '🎉 Victory!' : '💀 Game Over'}
             </span>
-            <button onClick={restart} style={btnSecondary()}>Restart</button>
+            <button className="nd-btn" onClick={restart} style={btnSecondary()}>Restart</button>
           </>
         )}
       </div>
 
       {/* Grid + enemy overlay */}
-      <div style={{
-        position: 'relative',
-        padding: GRID_PADDING,
-        borderRadius: 12,
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.06)',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.4), inset 0 0 24px rgba(255,255,255,0.02)',
-      }}>
+      <div className="nd-grid-wrap" style={{ position: 'relative', padding: GRID_PADDING }}>
         <div
           style={{
             display: 'grid',
@@ -321,8 +343,11 @@ export default function App() {
           const [ex, ey] = coordsAt(e.pathIndex);
           const sameCell = enemiesByCell.get(e.pathIndex) ?? [];
           const idx = sameCell.findIndex(s => s.id === e.id);
-          const stackOffset = (idx - (sameCell.length - 1) / 2) * 8;
-          return <EnemyToken key={e.id} enemy={e} x={ex} y={ey} stackOffset={stackOffset} />;
+          const center = (sameCell.length - 1) / 2;
+          // Distribute stacked enemies in a small spiral around cell center
+          const stackX = (idx - center) * 6;
+          const stackY = (idx - center) * 4;
+          return <EnemyToken key={e.id} enemy={e} x={ex} y={ey} stackX={stackX} stackY={stackY} />;
         })}
 
         {/* Damage floaters — also overlay layer */}
@@ -333,16 +358,7 @@ export default function App() {
           const left = GRID_PADDING + ex * CELL_PX + CELL_PX / 2;
           const top = GRID_PADDING + ey * CELL_PX;
           return (
-            <span key={d.id} style={{
-              position: 'absolute', left, top,
-              fontSize: 12, fontWeight: 800,
-              color: '#fde047',
-              pointerEvents: 'none',
-              textShadow: '0 0 4px black, 0 1px 0 rgba(0,0,0,0.6)',
-              whiteSpace: 'nowrap',
-              animation: 'floatUp 700ms ease-out forwards',
-              zIndex: 6,
-            }}>
+            <span key={d.id} className="nd-floater" style={{ left, top }}>
               -{d.amount}
             </span>
           );
@@ -358,6 +374,7 @@ export default function App() {
           return (
             <button
               key={tier}
+              className="tower-card"
               onClick={() => setSelectedTier(tier)}
               disabled={!canAfford && state.phase === 'prep'}
               style={{
@@ -370,14 +387,13 @@ export default function App() {
                 textAlign: 'center',
                 minWidth: 64,
                 opacity: canAfford ? 1 : 0.4,
-                boxShadow: isSelected ? `0 4px 12px ${TIER_COLORS[tier]}66` : 'none',
-                transition: 'transform 100ms, box-shadow 100ms',
-                transform: isSelected ? 'translateY(-1px)' : 'none',
+                boxShadow: isSelected ? `0 6px 16px ${TIER_COLORS[tier]}55, 0 2px 4px rgba(0,0,0,0.4)` : '0 1px 3px rgba(0,0,0,0.3)',
+                transform: isSelected ? 'translateY(-2px)' : 'none',
               }}
             >
               <img src={TIER_SPRITE[tier]} alt="" style={{ width: 32, height: 32, objectFit: 'contain', imageRendering: 'pixelated' }} />
               <div style={{ fontSize: 15, fontWeight: 900, lineHeight: 1 }}>{TIER_LABEL[tier]}</div>
-              <div style={{ fontSize:10, color: isSelected ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.6)', fontVariantNumeric: 'tabular-nums' }}>
+              <div className="nd-pill-num" style={{ fontSize: 10, color: isSelected ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.6)' }}>
                 ${def.cost}
               </div>
             </button>
@@ -386,15 +402,14 @@ export default function App() {
       </div>
 
       {/* Selected tower description */}
-      <div style={{
+      <div className="nd-pill-num" style={{
         fontSize: 12, color: 'rgba(255,255,255,0.85)',
         background: 'rgba(255,255,255,0.04)',
         border: `1px solid ${TIER_COLORS[selectedTier]}33`,
         borderRadius: 999,
         padding: '5px 14px',
-        fontVariantNumeric: 'tabular-nums',
       }}>
-        <span style={{ color: TIER_COLORS[selectedTier], fontWeight: 800 }}>
+        <span style={{ color: TIER_COLORS[selectedTier], fontWeight: 800, fontFamily: 'Inter, system-ui, sans-serif' }}>
           T{selectedTier} · {selectedDef.label}
         </span>
         <span style={{ opacity: 0.4, margin: '0 8px' }}>·</span>
@@ -430,7 +445,6 @@ function btnPrimary(color: string): React.CSSProperties {
     fontWeight: 700,
     cursor: 'pointer',
     boxShadow: `0 2px 8px ${color}55`,
-    transition: 'transform 100ms, box-shadow 100ms',
   };
 }
 

@@ -26,6 +26,13 @@ export interface Enemy {
   value: number;     // math answer this enemy "is"
 }
 
+export type AgeBucket = '7-9' | '10-12';
+
+export interface Problem {
+  display: string;
+  answer: number;
+}
+
 export type GamePhase = 'prep' | 'wave' | 'gameover' | 'victory';
 
 export interface GameState {
@@ -39,6 +46,7 @@ export interface GameState {
   turn: number;
   pendingEnemies: Enemy[];  // spawn queue for current wave
   score: number;
+  ageBucket: AgeBucket;
 }
 
 export interface TowerDef {
