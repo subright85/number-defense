@@ -499,13 +499,24 @@ export default function App() {
           );
         })}
 
-        {/* Sprite-based pop animation (Usopp 6-frame burst) */}
+        {/* Projectile that flies from base to balloon, then sprite pop */}
         {flashes.filter(f => f.kind === 'hit' && f.enemyId && f.enemyProgress !== undefined).map(f => {
           const hashH = (function(){let h=0;const id=f.enemyId!;for(let i=0;i<id.length;i++)h=((h<<5)-h+id.charCodeAt(i))|0;return Math.abs(h);})();
           const xJitter = (hashH % 5) * 22 - 44;
           const cx = LANE_WIDTH / 2 + xJitter;
           const cy = (f.enemyProgress ?? 0) * (LANE_HEIGHT - BALLOON_H - 4) + BALLOON_H / 3;
-          return <PopBurst key={`burst-${f.id}`} x={cx} y={cy} />;
+          const fromX = LANE_WIDTH / 2;
+          const fromY = LANE_HEIGHT - 18;
+          return (
+            <ProjectileShot
+              key={`shot-${f.id}`}
+              fromX={fromX} fromY={fromY}
+              toX={cx} toY={cy}
+              value={f.result ?? null}
+              ghostNumber={f.result ?? undefined}
+              ghostVariant={f.enemyId ? balloonVariantFor(f.enemyId) : undefined}
+            />
+          );
         })}
 
         {flashes.map(f => (
@@ -1014,6 +1025,87 @@ function DailyChallengeCard({ onStart }: { onStart: () => void }) {
         </div>
       </div>
     </button>
+  );
+}
+
+const PROJECTILE_FLY_MS = 240;
+
+function ProjectileShot({
+  fromX, fromY, toX, toY, value, ghostNumber, ghostVariant,
+}: {
+  fromX: number; fromY: number; toX: number; toY: number;
+  value: number | null;
+  ghostNumber?: number;
+  ghostVariant?: number;
+}) {
+  const [phase, setPhase] = useState<'flying' | 'popping' | 'done'>('flying');
+  useEffect(() => {
+    const t1 = setTimeout(() => setPhase('popping'), PROJECTILE_FLY_MS);
+    const t2 = setTimeout(() => setPhase('done'), PROJECTILE_FLY_MS + 384 + 80);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+  if (phase === 'done') return null;
+  const dx = toX - fromX;
+  const dy = toY - fromY;
+  return (
+    <>
+      {phase === 'flying' && ghostNumber !== undefined && ghostVariant !== undefined && (
+        <div style={{
+          position: 'absolute',
+          left: toX - BALLOON_W / 2, top: toY - BALLOON_H / 3,
+          width: BALLOON_W, height: BALLOON_H,
+          pointerEvents: 'none',
+          opacity: 0.85,
+        }}>
+          <Balloon number={ghostNumber} variant={ghostVariant} />
+        </div>
+      )}
+      {phase === 'flying' && (
+        <>
+          {/* Trail glow particles */}
+          {[0.45, 0.65, 0.85].map((delayPct, idx) => (
+            <div
+              key={`trail-${idx}`}
+              style={{
+                position: 'absolute',
+                left: fromX - 4, top: fromY - 4,
+                width: 10, height: 10,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(251,191,36,0.85), rgba(251,191,36,0))',
+                pointerEvents: 'none',
+                animation: `projectileTrail ${PROJECTILE_FLY_MS}ms ease-out forwards ${delayPct * 30}ms`,
+                ['--dx' as never]: `${dx}px`,
+                ['--dy' as never]: `${dy}px`,
+                opacity: 0,
+              } as React.CSSProperties}
+            />
+          ))}
+          {/* The number itself flies up */}
+          <div
+            style={{
+              position: 'absolute',
+              left: fromX - 14, top: fromY - 14,
+              width: 28, height: 28,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle at 35% 35%, #fef3c7, #fbbf24 60%, #b45309 100%)',
+              border: '2px solid #d97706',
+              boxShadow: '0 0 14px rgba(251,191,36,0.85), inset 0 1px 0 rgba(255,255,255,0.6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontWeight: 800, fontSize: 12, color: '#1f2937',
+              animation: `projectileFly ${PROJECTILE_FLY_MS}ms cubic-bezier(0.4, 0, 0.5, 1) forwards`,
+              ['--dx' as never]: `${dx}px`,
+              ['--dy' as never]: `${dy}px`,
+              pointerEvents: 'none',
+              zIndex: 7,
+            } as React.CSSProperties}
+          >
+            {value ?? '★'}
+          </div>
+        </>
+      )}
+      {phase === 'popping' && <PopBurst x={toX} y={toY} />}
+    </>
   );
 }
 

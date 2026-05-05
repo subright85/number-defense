@@ -13,7 +13,8 @@ export interface FlashEvent {
   id: string;
   kind: 'hit' | 'miss';
   enemyId?: string;
-  enemyProgress?: number; // 0..1, fall progress at the moment of kill
+  enemyProgress?: number;
+  result?: number | null;  // computed equation result
   text: string;
   ts: number;
 }
@@ -115,6 +116,7 @@ export function useGameLoop() {
           kind: result.hit ? 'hit' : 'miss',
           enemyId: result.killedEnemyId ?? undefined,
           enemyProgress,
+          result: result.result,
           text: result.hit ? `= ${result.result} ✓` : `= ${result.result} ✗`,
           ts: now,
         };
