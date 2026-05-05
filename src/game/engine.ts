@@ -105,17 +105,17 @@ export function advanceTurn(s: GameState, _rng: () => number = Math.random): Gam
   const killedIds = new Set<string>();
   let goldEarned = 0;
 
+  const cooldownUpdates = new Map<string, number>();
   towers.forEach(tower => {
     if (tower.cooldown > 0) return;
     const def = getTowerDef(tower.tier);
-    // Find nearest enemy in range
     const inRange = newEnemies
       .filter(e => !killedIds.has(e.id))
       .filter(e => {
         const [ex, ey] = PATH_COORDS[e.pathIndex];
         return chebyshev(tower.x, tower.y, ex, ey) <= def.range;
       })
-      .sort((a, b) => b.pathIndex - a.pathIndex); // furthest along path first
+      .sort((a, b) => b.pathIndex - a.pathIndex);
 
     if (!inRange.length) return;
     const target = inRange[0];
@@ -127,10 +127,9 @@ export function advanceTurn(s: GameState, _rng: () => number = Math.random): Gam
       goldEarned += target.reward;
       score += target.value;
     }
-    // Update tower cooldown
-    const tIdx = towers.findIndex(t => t.id === tower.id);
-    towers = towers.map((t, i) => i === tIdx ? { ...t, cooldown: def.cooldown } : t);
+    cooldownUpdates.set(tower.id, def.cooldown);
   });
+  towers = towers.map(t => cooldownUpdates.has(t.id) ? { ...t, cooldown: cooldownUpdates.get(t.id)! } : t);
 
   enemies = newEnemies.filter(e => !killedIds.has(e.id));
   gold = gold + goldEarned;

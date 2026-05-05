@@ -17,7 +17,7 @@ function coordsAt(pathIdx: number): [number, number] {
 export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [selectedTier, setSelectedTier] = useState<Tower['tier']>(1);
-  const { state, startNextWave, nextTurn, buyTower, restart, autoPlay, toggleAutoPlay } = useGameLoop();
+  const { state, paused, damageEvents, startNextWave, nextTurn, buyTower, restart, togglePause } = useGameLoop();
 
   useEffect(() => {
     const init = () => loadBalance().then(() => { restart(); setLoaded(true); });
@@ -60,15 +60,20 @@ export default function App() {
         )}
         {state.phase === 'wave' && (
           <>
-            <button onClick={nextTurn} className="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-sm font-bold">
-              ⏭ Step
-            </button>
             <button
-              onClick={toggleAutoPlay}
-              className={`px-3 py-1 rounded text-sm font-bold ${autoPlay ? 'bg-orange-500 hover:bg-orange-400' : 'bg-slate-600 hover:bg-slate-500'}`}
+              onClick={togglePause}
+              className={`px-3 py-1 rounded text-sm font-bold ${paused ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-orange-500 hover:bg-orange-400'}`}
             >
-              {autoPlay ? '⏸ Pause' : '▶▶ Auto'}
+              {paused ? '▶ Resume' : '⏸ Pause'}
             </button>
+            {paused && (
+              <button onClick={nextTurn} className="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-sm font-bold">
+                ⏭ Step
+              </button>
+            )}
+            <span className="text-xs text-gray-400 font-mono">
+              {state.enemies.length} on field · {state.pendingEnemies.length} queued
+            </span>
           </>
         )}
         {(state.phase === 'gameover' || state.phase === 'victory') && (
@@ -76,11 +81,6 @@ export default function App() {
             <span className="font-bold">{state.phase === 'victory' ? '🎉 Victory!' : '💀 Game Over'}</span>
             <button onClick={restart} className="bg-gray-600 hover:bg-gray-500 px-3 py-1 rounded text-sm font-bold">Restart</button>
           </>
-        )}
-        {state.phase === 'wave' && (
-          <span className="text-xs text-gray-400 font-mono">
-            {state.enemies.length} on field · {state.pendingEnemies.length} queued
-          </span>
         )}
       </div>
 
@@ -99,6 +99,7 @@ export default function App() {
             });
             const isSpawn = x === SPAWN_COORD[0] && y === SPAWN_COORD[1];
             const isBase = x === BASE_COORD[0] && y === BASE_COORD[1];
+            const dmgEvents = enemy ? damageEvents.filter(d => d.enemyId === enemy.id) : [];
 
             let bg = '#111827';
             if (type === 'path') bg = '#1f2937';
@@ -135,16 +136,24 @@ export default function App() {
                     fontSize:10, fontWeight:700, overflow:'hidden',
                   }}>
                     <span style={{ lineHeight:1 }}>{enemy.value}</span>
-                    {/* HP bar */}
                     <div style={{ position:'absolute', bottom:3, left:5, right:5, height:3, background:'rgba(0,0,0,0.4)', borderRadius:2 }}>
                       <div style={{
                         height:'100%', borderRadius:2,
                         background: enemy.hp / enemy.maxHp > 0.5 ? '#4ade80' : '#f59e0b',
-                        width: `${Math.max(0, (enemy.hp / enemy.maxHp)) * 100}%`,
+                        width: `${Math.max(0, enemy.hp / enemy.maxHp) * 100}%`,
                       }} />
                     </div>
                   </div>
                 )}
+                {/* Damage floaters */}
+                {dmgEvents.map(d => (
+                  <span key={d.id} style={{
+                    position:'absolute', top:0, right:2, fontSize:9, fontWeight:700,
+                    color:'#fbbf24', pointerEvents:'none', animation:'none',
+                  }}>
+                    -{d.amount}
+                  </span>
+                ))}
               </div>
             );
           })
@@ -178,9 +187,9 @@ export default function App() {
 
       {/* Legend */}
       <div className="text-xs text-gray-500 font-mono flex gap-4">
-        <span>⚔ damage</span>
+        <span>⚔ dmg</span>
         <span>◎ range</span>
-        <span>⏱ cooldown (turns)</span>
+        <span>⏱ cooldown turns</span>
       </div>
     </div>
   );
