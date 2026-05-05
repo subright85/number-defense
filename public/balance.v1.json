@@ -1,0 +1,20 @@
+{
+  "_comment": "Hot-reloadable balance sheet. Edit without rebuilding. Robin owns this file from W1 (2026-05-05). Game-engine layer: 5 tower × 5 wave numbers. Learning layer (age, tier, problem type, correct_rate target, Hartigan validation spec) lives separately at /data/learning-spec.json — fetched by problem generator and analytics, not by engine.ts. Frame separation is intentional: matrix dimension (2 age × 5 tier × 3 tower) does not collapse cleanly into frozen 5×5 — see learning-spec.json#dpm_formula._note.",
+  "_learning_spec_ref": "/data/learning-spec.json",
+  "towers": [
+    { "tier": 1, "cost": 50,  "damage": 10, "range": 2, "cooldown": 1, "label": "Slingshot" },
+    { "tier": 2, "cost": 100, "damage": 25, "range": 2, "cooldown": 1, "label": "Cannon" },
+    { "tier": 3, "cost": 200, "damage": 50, "range": 3, "cooldown": 1, "label": "Mortar" },
+    { "tier": 4, "cost": 350, "damage": 90, "range": 3, "cooldown": 1, "label": "Tesla" },
+    { "tier": 5, "cost": 600, "damage": 160, "range": 4, "cooldown": 1, "label": "Cannon King" }
+  ],
+  "waves": [
+    { "wave": 1, "enemyCount": 6,  "spawnInterval": 2, "hpBase": 30,  "speedBase": 1, "rewardBase": 10 },
+    { "wave": 2, "enemyCount": 8,  "spawnInterval": 2, "hpBase": 50,  "speedBase": 1, "rewardBase": 12 },
+    { "wave": 3, "enemyCount": 8,  "spawnInterval": 2, "hpBase": 80,  "speedBase": 1, "rewardBase": 15 },
+    { "wave": 4, "enemyCount": 10, "spawnInterval": 2, "hpBase": 110, "speedBase": 2, "rewardBase": 18 },
+    { "wave": 5, "enemyCount": 12, "spawnInterval": 2, "hpBase": 150, "speedBase": 2, "rewardBase": 20 }
+  ],
+  "startingGold": 150,
+  "startingLives": 20
+}

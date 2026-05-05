@@ -1,68 +1,55 @@
-export type CellType = 'empty' | 'tower' | 'path' | 'spawn' | 'base';
+// Number Defense v2 — falling-balloon math game
 
-export interface Cell {
-  x: number;
-  y: number;
-  type: CellType;
+export type EquationKind = 'add' | 'sub' | 'mul' | 'div';
+
+// Slot in the equation builder. Fixed operators and player-fillable variables.
+export interface EquationSlot {
+  op: '+' | '−' | '×' | '÷' | null;
+  value: number | null;
+  poolEntryId: string | null; // backref to pool slot for visual highlight
 }
 
-export type TowerTier = 1 | 2 | 3 | 4 | 5;
-
-export interface Tower {
-  id: string;
-  x: number;
-  y: number;
-  tier: TowerTier;
-  cooldown: number;  // turns remaining until next shot
+export interface Stage {
+  index: number;
+  kind: EquationKind;
+  unlockAt: number; // balloons popped to unlock this tier
+  variableCount: 2 | 3;
+  numberMax: number;
+  enemyMaxValue: number;
+  spawnIntervalMs: number;
+  fallDurationMs: number;
+  label: string;
 }
 
 export interface Enemy {
   id: string;
-  pathIndex: number;  // index into MAP.path array
-  hp: number;
-  maxHp: number;
-  reward: number;    // gold on kill
-  speed: number;     // cells per turn
-  value: number;     // math answer this enemy "is"
+  target: number;
+  spawnedAt: number;
+  fallDurationMs: number;
 }
 
-export type AgeBucket = '7-9' | '10-12';
+export type GamePhase = 'menu' | 'playing' | 'gameover';
 
-export interface Problem {
-  display: string;
-  answer: number;
+export interface PoolEntry {
+  id: string;
+  number: number;
+  refillingUntilMs?: number;
 }
-
-export type GamePhase = 'prep' | 'wave' | 'gameover' | 'victory';
 
 export interface GameState {
   phase: GamePhase;
-  grid: Cell[][];           // GRID_SIZE × GRID_SIZE
-  towers: Tower[];
-  enemies: Enemy[];
-  wave: number;
+  mode: EquationKind;       // selected equation kind for this run
+  stageIndex: number;       // current tier within the mode
   lives: number;
-  gold: number;
-  turn: number;
-  pendingEnemies: Enemy[];  // spawn queue for current wave
   score: number;
-  ageBucket: AgeBucket;
-}
-
-export interface TowerDef {
-  tier: TowerTier;
-  cost: number;
-  damage: number;
-  range: number;
-  cooldown: number;
-  label: string;
-}
-
-export interface WaveDef {
-  wave: number;
-  enemyCount: number;
-  spawnInterval: number;  // turns between spawns
-  hpBase: number;
-  speedBase: number;
-  rewardBase: number;
+  pool: PoolEntry[];
+  equation: EquationSlot[];
+  enemies: Enemy[];
+  spawnedSoFar: number;
+  killedSoFar: number;
+  reachedBaseSoFar: number;
+  attempts: number;
+  hits: number;
+  lastSpawnAt: number;
+  startedAt: number;        // epoch ms when run started; 0 if not started
 }
