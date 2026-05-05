@@ -40,6 +40,12 @@ export default function App() {
     moved: boolean;
   } | null>(null);
   const slotRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const prevStageIndexRef = useRef<number>(state.stageIndex);
+  const [tierToast, setTierToast] = useState<{ id: number; label: string } | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('nd_onboarded') !== '1';
+  });
 
   useEffect(() => {
     loadBalance().then(() => { restart(); setLoaded(true); });
@@ -87,6 +93,37 @@ export default function App() {
     }
     lastReachedRef.current = state.reachedBaseSoFar;
   }, [state.reachedBaseSoFar]);
+
+  // Tier-up toast when stageIndex changes mid-play
+  useEffect(() => {
+    if (state.phase !== 'playing') {
+      prevStageIndexRef.current = state.stageIndex;
+      return;
+    }
+    if (state.stageIndex !== prevStageIndexRef.current) {
+      const newStage = getStage(state.stageIndex);
+      if (newStage) {
+        const toastId = Date.now();
+        setTierToast({ id: toastId, label: newStage.label });
+        const t = setTimeout(() => {
+          setTierToast(prev => (prev && prev.id === toastId ? null : prev));
+        }, 2200);
+        prevStageIndexRef.current = state.stageIndex;
+        return () => clearTimeout(t);
+      }
+      prevStageIndexRef.current = state.stageIndex;
+    }
+  }, [state.stageIndex, state.phase]);
+
+  // Dismiss onboarding on first hit
+  useEffect(() => {
+    if (state.killedSoFar > 0 && showOnboarding) {
+      setShowOnboarding(false);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('nd_onboarded', '1');
+      }
+    }
+  }, [state.killedSoFar, showOnboarding]);
 
   // Drag pointer handlers (window-level)
   useEffect(() => {
@@ -620,6 +657,63 @@ export default function App() {
         <br />{t('help.line2')}
       </div>
     </div>
+    {tierToast && (
+      <div
+        style={{
+          position: 'fixed',
+          top: '18%', left: '50%',
+          transform: 'translate(-50%, 0)',
+          zIndex: 240,
+          background: 'linear-gradient(135deg, #fde047 0%, #f59e0b 100%)',
+          color: '#1f2937',
+          padding: '10px 20px',
+          borderRadius: 14,
+          fontSize: 14, fontWeight: 800,
+          letterSpacing: '0.02em',
+          boxShadow: '0 10px 30px rgba(245,158,11,0.55)',
+          border: '1.5px solid #d97706',
+          pointerEvents: 'none',
+          animation: 'tierUpPop 2200ms ease-out forwards',
+        }}
+      >
+        🆙 {tierToast.label}
+      </div>
+    )}
+    {showOnboarding && state.phase === 'playing' && state.killedSoFar === 0 && (
+      <div
+        style={{
+          position: 'fixed',
+          right: 16, bottom: 16,
+          zIndex: 220,
+          maxWidth: 240,
+          background: 'rgba(99, 102, 241, 0.95)',
+          color: 'white',
+          padding: '10px 14px',
+          borderRadius: 14,
+          fontSize: 12, fontWeight: 700,
+          lineHeight: 1.5,
+          boxShadow: '0 8px 24px rgba(99,102,241,0.55)',
+          border: '1px solid rgba(255,255,255,0.18)',
+        }}
+      >
+        👋 Tap or drag a number tile up into the equation. Match the result to a falling balloon.
+        <button
+          onClick={() => {
+            setShowOnboarding(false);
+            if (typeof window !== 'undefined') window.localStorage.setItem('nd_onboarded', '1');
+          }}
+          style={{
+            marginTop: 8, fontSize: 11,
+            background: 'rgba(255,255,255,0.18)',
+            border: 'none', color: 'white',
+            padding: '4px 10px', borderRadius: 999,
+            fontWeight: 700, cursor: 'pointer',
+          }}
+        >
+          got it
+        </button>
+      </div>
+    )}
     {state.phase === 'paused' && (
       <div
         onClick={togglePause}

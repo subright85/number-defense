@@ -67,6 +67,14 @@
   100% { transform: translateX(110vw) scale(var(--scale, 1)); }
 }
 
+@keyframes tierUpPop {
+  0%   { opacity: 0; transform: translate(-50%, -10px) scale(0.85); }
+  15%  { opacity: 1; transform: translate(-50%, 0) scale(1.06); }
+  25%  { transform: translate(-50%, 0) scale(1); }
+  85%  { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -8px) scale(0.95); }
+}
+
 .pool-tile:hover:not(:disabled) {
   transform: translateY(-2px) scale(1.04);
   filter: brightness(1.05);
