@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { loadBalance, getStage, getHighScore, getLeaderboard, recordScore, getDailyBest, recordDaily, dailyKindForDate, dateKey } from './game/engine';
+import { loadBalance, getStage, getHighScore, getLeaderboard, recordScore, getDailyBest, recordDaily, dailyKindForDate, dateKey, getNickname, setNickname } from './game/engine';
 import type { LeaderboardEntry } from './game/engine';
 import { useGameLoop } from './game/useGameLoop';
 import { useT, type Locale } from './i18n';
@@ -31,6 +31,7 @@ export default function App() {
   } | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState<EquationKind | null>(null);
   const [muted, setMutedState] = useState<boolean>(() => isMuted());
+  const [nickname, setNicknameState] = useState<string>(() => getNickname());
   const lastFlashIdRef = useRef<string | null>(null);
   const lastReachedRef = useRef<number>(0);
   const [drag, setDrag] = useState<{
@@ -202,10 +203,11 @@ export default function App() {
         killed: state.killedSoFar,
         accuracyPct: Math.round(accuracy * 100),
         survivedSec,
+        name: nickname || undefined,
       });
       setLatestHighScoreSnapshot(result);
     }
-  }, [state.phase, state.mode, state.score, state.attempts, state.hits, state.killedSoFar, state.startedAt, state.isDaily, state.dailyDateKey, state.bestCombo, state.pausedAt, state.pausedTotal]);
+  }, [state.phase, state.mode, state.score, state.attempts, state.hits, state.killedSoFar, state.startedAt, state.isDaily, state.dailyDateKey, state.bestCombo, state.pausedAt, state.pausedTotal, nickname]);
 
   if (!loaded) {
     return (
@@ -233,6 +235,11 @@ export default function App() {
           display: 'flex', flexDirection: 'column', gap: 16,
         }}>
           <HeroBlock taglineLabel={t('tagline')} />
+
+          <NicknameInput
+            value={nickname}
+            onChange={(name) => { setNicknameState(name); setNickname(name); }}
+          />
 
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8, marginTop: 6,
@@ -386,6 +393,21 @@ export default function App() {
               style={secondaryBtn()}
             >
               ✉ Share
+            </button>
+            <button
+              onClick={() => downloadScoreCard({
+                mode: state.mode,
+                glyph: MODE_META[state.mode].glyph,
+                color: MODE_META[state.mode].color,
+                score: finalScore,
+                killed: state.killedSoFar,
+                accuracy,
+                survivedSec,
+                nickname,
+              })}
+              style={secondaryBtn()}
+            >
+              📥 Save card
             </button>
             <button onClick={() => setShowLeaderboard(state.mode)} style={secondaryBtn()}>
               🏆 Leaderboard
@@ -920,11 +942,12 @@ function LeaderboardModal({
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{
-              display: 'grid', gridTemplateColumns: '32px 1fr 1fr 60px',
+              display: 'grid', gridTemplateColumns: '28px 1.2fr 60px 60px 50px',
+              gap: 4,
               fontSize: 10, color: 'rgba(255,255,255,0.4)',
               padding: '4px 8px', textTransform: 'uppercase', letterSpacing: '0.04em',
             }}>
-              <span>#</span><span>Score</span><span>Pop · Acc</span><span style={{ textAlign: 'right' }}>Time</span>
+              <span>#</span><span>Name</span><span style={{ textAlign: 'right' }}>Score</span><span>Pop·Acc</span><span style={{ textAlign: 'right' }}>Time</span>
             </div>
             {entries.map((e, i) => (
               <LeaderboardRow key={e.ts} rank={i + 1} entry={e} />
@@ -941,8 +964,8 @@ function LeaderboardRow({ rank, entry }: { rank: number; entry: LeaderboardEntry
   const accent = rank === 1 ? '#fbbf24' : rank === 2 ? '#cbd5e1' : rank === 3 ? '#fb923c' : 'rgba(255,255,255,0.7)';
   return (
     <div style={{
-      display: 'grid', gridTemplateColumns: '32px 1fr 1fr 60px',
-      alignItems: 'center',
+      display: 'grid', gridTemplateColumns: '28px 1.2fr 60px 60px 50px',
+      alignItems: 'center', gap: 4,
       padding: '6px 8px',
       borderRadius: 8,
       background: isTop3 ? `linear-gradient(90deg, ${accent}22, transparent 80%)` : 'rgba(255,255,255,0.02)',
@@ -951,11 +974,17 @@ function LeaderboardRow({ rank, entry }: { rank: number; entry: LeaderboardEntry
       fontVariantNumeric: 'tabular-nums',
     }}>
       <span style={{ color: accent, fontWeight: 800 }}>{rank}</span>
-      <span style={{ color: '#fbbf24', fontWeight: 700 }}>{entry.score}</span>
-      <span style={{ color: 'rgba(255,255,255,0.7)' }}>
+      <span style={{
+        color: 'white', fontWeight: 600, fontSize: 11,
+        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+      }}>
+        {entry.name || 'anon'}
+      </span>
+      <span style={{ color: '#fbbf24', fontWeight: 700, textAlign: 'right' }}>{entry.score}</span>
+      <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10 }}>
         🎈{entry.killed} · {entry.accuracyPct}%
       </span>
-      <span style={{ color: 'rgba(255,255,255,0.55)', textAlign: 'right' }}>
+      <span style={{ color: 'rgba(255,255,255,0.55)', textAlign: 'right', fontSize: 10 }}>
         {entry.survivedSec}s
       </span>
     </div>
@@ -1106,6 +1135,46 @@ function ProjectileShot({
       )}
       {phase === 'popping' && <PopBurst x={toX} y={toY} />}
     </>
+  );
+}
+
+function NicknameInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      background: 'rgba(255,255,255,0.04)',
+      border: '1px solid rgba(255,255,255,0.1)',
+      borderRadius: 12,
+      padding: '6px 12px',
+    }}>
+      <span style={{ fontSize: 14 }}>👤</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Your name (optional)"
+        maxLength={20}
+        style={{
+          flex: 1,
+          background: 'transparent',
+          border: 'none',
+          color: 'white',
+          fontSize: 13,
+          fontWeight: 600,
+          outline: 'none',
+          fontFamily: "'Inter', sans-serif",
+        }}
+      />
+      {value && (
+        <span style={{
+          fontSize: 10,
+          color: 'rgba(255,255,255,0.4)',
+          fontVariantNumeric: 'tabular-nums',
+        }}>
+          {value.length}/20
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -1269,6 +1338,114 @@ function DonationFooter() {
       </div>
     </div>
   );
+}
+
+async function downloadScoreCard(args: {
+  mode: EquationKind; glyph: string; color: string; score: number;
+  killed: number; accuracy: number; survivedSec: number; nickname: string;
+}) {
+  if (typeof document === 'undefined') return;
+  const SIZE = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  // Background gradient
+  const bg = ctx.createRadialGradient(SIZE * 0.3, SIZE * 0.1, 0, SIZE * 0.5, SIZE * 0.5, SIZE * 0.9);
+  bg.addColorStop(0, '#1e1b4b');
+  bg.addColorStop(0.4, '#0d0d2b');
+  bg.addColorStop(1, '#050510');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
+  // Stars
+  for (let i = 0; i < 60; i++) {
+    const x = (i * 9301 + 49297) % SIZE;
+    const y = ((i + 13) * 9301 + 49297) % SIZE;
+    const r = ((i % 3) + 1);
+    ctx.beginPath();
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.15 + (i % 4) * 0.1})`;
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Title gradient
+  const titleGrad = ctx.createLinearGradient(0, 130, SIZE, 220);
+  titleGrad.addColorStop(0, '#818cf8');
+  titleGrad.addColorStop(0.5, '#f472b6');
+  titleGrad.addColorStop(1, '#fbbf24');
+  ctx.fillStyle = titleGrad;
+  ctx.font = '900 100px Inter, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Number Defense', SIZE / 2, 180);
+
+  // Tagline
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '700 24px Inter, system-ui, sans-serif';
+  ctx.fillText('MATH · POP · DEFEND', SIZE / 2, 240);
+
+  // Mode glyph in big colored circle
+  const cx = SIZE / 2;
+  const cy = 470;
+  const radius = 130;
+  ctx.beginPath();
+  const modeGrad = ctx.createRadialGradient(cx - 30, cy - 30, 20, cx, cy, radius);
+  modeGrad.addColorStop(0, args.color);
+  modeGrad.addColorStop(1, '#0a0a1f');
+  ctx.fillStyle = modeGrad;
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = args.color;
+  ctx.stroke();
+
+  // Mode glyph
+  ctx.fillStyle = 'white';
+  ctx.font = '900 160px JetBrains Mono, monospace';
+  ctx.fillText(args.glyph, cx, cy + 6);
+
+  // Score
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = '900 220px JetBrains Mono, monospace';
+  ctx.fillText(String(args.score), SIZE / 2, 760);
+
+  // Score label
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.font = '700 26px Inter, system-ui, sans-serif';
+  ctx.fillText('FINAL SCORE', SIZE / 2, 870);
+
+  // Stats line
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.font = '700 32px JetBrains Mono, monospace';
+  ctx.fillText(`🎈 ${args.killed}    🎯 ${args.accuracy}%    ⏱ ${args.survivedSec}s`, SIZE / 2, 940);
+
+  // Nickname (if any)
+  if (args.nickname) {
+    ctx.fillStyle = '#fbcfe8';
+    ctx.font = '700 30px Inter, system-ui, sans-serif';
+    ctx.fillText(`— ${args.nickname}`, SIZE / 2, 1000);
+  }
+
+  // URL
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.font = '500 22px Inter, system-ui, sans-serif';
+  ctx.fillText('number-defense.vercel.app', SIZE / 2, args.nickname ? 1045 : 1010);
+
+  // Trigger download
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `number-defense-${args.score}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, 'image/png');
 }
 
 async function shareScore(args: {

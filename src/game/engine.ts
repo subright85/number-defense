@@ -536,7 +536,22 @@ export interface LeaderboardEntry {
   killed: number;
   accuracyPct: number;
   survivedSec: number;
+  name?: string;
   ts: number;
+}
+
+const NICKNAME_KEY = 'nd_nickname';
+
+export function getNickname(): string {
+  if (typeof window === 'undefined') return '';
+  return window.localStorage.getItem(NICKNAME_KEY) || '';
+}
+
+export function setNickname(name: string) {
+  if (typeof window === 'undefined') return;
+  const trimmed = name.trim().slice(0, 20);
+  if (trimmed) window.localStorage.setItem(NICKNAME_KEY, trimmed);
+  else window.localStorage.removeItem(NICKNAME_KEY);
 }
 
 export function getHighScore(mode: EquationKind): number {
