@@ -12,7 +12,10 @@
     { "index": 8, "kind": "sub", "unlockAt": 25, "variableCount": 2, "numberMax": 25, "enemyMaxValue": 24,  "spawnIntervalMs": 1900, "fallDurationMs": 10000, "label": "Subtraction · Tier 3" },
 
     { "index": 9, "kind": "mul", "unlockAt": 0,  "variableCount": 2, "numberMax": 9,  "enemyMaxValue": 81,  "spawnIntervalMs": 2200, "fallDurationMs": 11000, "label": "Multiplication · Tier 1" },
-    { "index": 10,"kind": "mul", "unlockAt": 15, "variableCount": 2, "numberMax": 12, "enemyMaxValue": 144, "spawnIntervalMs": 2000, "fallDurationMs": 10500, "label": "Multiplication · Tier 2" }
+    { "index": 10,"kind": "mul", "unlockAt": 15, "variableCount": 2, "numberMax": 12, "enemyMaxValue": 144, "spawnIntervalMs": 2000, "fallDurationMs": 10500, "label": "Multiplication · Tier 2" },
+
+    { "index": 11,"kind": "div", "unlockAt": 0,  "variableCount": 2, "numberMax": 9,  "enemyMaxValue": 9,   "spawnIntervalMs": 2400, "fallDurationMs": 12000, "label": "Division · Tier 1" },
+    { "index": 12,"kind": "div", "unlockAt": 12, "variableCount": 2, "numberMax": 12, "enemyMaxValue": 12,  "spawnIntervalMs": 2200, "fallDurationMs": 11500, "label": "Division · Tier 2" }
   ],
   "poolSize": 6,
   "refillDelayMs": 500,
