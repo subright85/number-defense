@@ -51,12 +51,8 @@ const HudIcons = {
 const LANE_HEIGHT = 460;
 const LANE_WIDTH  = 320;
 
-const MODE_META: Record<EquationKind, { glyph: string; color: string; available: boolean }> = {
-  add: { glyph: '+', color: '#10b981', available: true },
-  sub: { glyph: '−', color: '#f59e0b', available: true },
-  mul: { glyph: '×', color: '#ec4899', available: true },
-  div: { glyph: '÷', color: '#6366f1', available: true },
-};
+const MIXED_COLOR = '#6366f1';
+const MIXED_GLYPH = '∞';
 
 export default function App() {
   const [loaded, setLoaded] = useState(false);
@@ -68,7 +64,8 @@ export default function App() {
   const [latestHighScoreSnapshot, setLatestHighScoreSnapshot] = useState<{
     isNew: boolean; previous: number; rank: number | null;
   } | null>(null);
-  const [showLeaderboard, setShowLeaderboard] = useState<EquationKind | null>(null);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showLtrBanner, setShowLtrBanner] = useState(false);
   const [muted, setMutedState] = useState<boolean>(() => isMuted());
   const [nickname, setNicknameState] = useState<string>(() => getNickname());
   const lastFlashIdRef = useRef<string | null>(null);
@@ -217,6 +214,15 @@ export default function App() {
     }
   }, [state.phase]);
 
+  // Show left-to-right evaluation banner on first mixed round (R8)
+  useEffect(() => {
+    if (state.phase === 'playing' && state.round === 8 && !showLtrBanner) {
+      if (localStorage.getItem('nd:tutorial:leftToRight') !== '1') {
+        setShowLtrBanner(true);
+      }
+    }
+  }, [state.phase, state.round, showLtrBanner]);
+
   // Record final score on gameover
   useEffect(() => {
     if (state.phase !== 'gameover' || recordedHighScoreRef.current) return;
@@ -295,43 +301,37 @@ export default function App() {
 
           <DailyChallengeCard onStart={() => { unlockAudio(); playStart(); startDaily(); }} />
 
-          <div>
-            <div style={{
-              fontSize: 10, color: 'rgba(255,255,255,0.45)',
-              letterSpacing: '0.08em', textTransform: 'uppercase',
-              fontWeight: 700, marginBottom: 8, paddingLeft: 4,
-            }}>
-              Endless Modes
-            </div>
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10,
-            }}>
-              {(['add', 'sub', 'mul', 'div'] as EquationKind[]).map(mode => {
-                const meta = MODE_META[mode];
-                const hs = getHighScore(mode);
-                return (
-                  <ModeCard
-                    key={mode}
-                    glyph={meta.glyph}
-                    color={meta.color}
-                    label={t(`kind.${mode}` as 'kind.add' | 'kind.sub' | 'kind.mul' | 'kind.div')}
-                    best={hs}
-                    available={meta.available}
-                    onClick={() => { if (meta.available) { unlockAudio(); playStart(); startGame(mode); } }}
-                    onLeaderboard={() => setShowLeaderboard(mode)}
-                  />
-                );
-              })}
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button
+              onClick={() => { unlockAudio(); playStart(); startGame(); }}
+              style={{
+                ...primaryBtn(MIXED_COLOR),
+                width: '100%',
+                padding: '18px 24px',
+                fontSize: 18,
+                borderRadius: 16,
+                boxShadow: `0 6px 24px ${MIXED_COLOR}55, inset 0 1px 0 rgba(255,255,255,0.18)`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              }}
+              className="nd-btn"
+            >
+              <span style={{ fontSize: 28, fontFamily: "'JetBrains Mono', monospace" }}>{MIXED_GLYPH}</span>
+              <span>{t('menu.start')}</span>
+            </button>
+            <button
+              onClick={() => setShowLeaderboard(true)}
+              style={{ ...secondaryBtn(), width: '100%', fontSize: 13 }}
+            >
+              🏆 Leaderboard
+            </button>
           </div>
 
           <DonationFooter />
         </div>
         {showLeaderboard && (
           <LeaderboardModal
-            mode={showLeaderboard}
-            onClose={() => setShowLeaderboard(null)}
-            kindLabel={t(`kind.${showLeaderboard}` as 'kind.add')}
+            mode={state.mode}
+            onClose={() => setShowLeaderboard(false)}
           />
         )}
       </div>
@@ -360,7 +360,7 @@ export default function App() {
           </h1>
           <div style={{ marginTop: 18, fontSize: 14, color: 'rgba(255,255,255,0.78)', lineHeight: 1.7 }}>
             <div>
-              {MODE_META[state.mode].glyph} {t(`kind.${state.mode}` as 'kind.add')}
+              {state.isDaily ? '🎯 Daily' : `${MIXED_GLYPH} Mixed`}
               {state.isDaily && <span style={{ opacity: 0.5, margin: '0 6px' }}>·</span>}
               {state.isDaily && <span style={{ color: '#fbbf24', fontWeight: 700 }}>{state.dailyDateKey}</span>}
               <span style={{ opacity: 0.5, margin: '0 6px' }}>·</span>
@@ -415,15 +415,15 @@ export default function App() {
           </div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 22, flexWrap: 'wrap' }}>
             <button
-              onClick={() => state.isDaily ? startDaily() : startGame(state.mode)}
-              style={primaryBtn(MODE_META[state.mode].color)}
+              onClick={() => state.isDaily ? startDaily() : startGame()}
+              style={primaryBtn(MIXED_COLOR)}
             >
               ↻ Retry
             </button>
             <button
               onClick={() => shareScore({
                 mode: state.mode,
-                glyph: MODE_META[state.mode].glyph,
+                glyph: MIXED_GLYPH,
                 score: finalScore,
                 killed: state.killedSoFar,
                 accuracy,
@@ -436,8 +436,8 @@ export default function App() {
             <button
               onClick={() => downloadScoreCard({
                 mode: state.mode,
-                glyph: MODE_META[state.mode].glyph,
-                color: MODE_META[state.mode].color,
+                glyph: MIXED_GLYPH,
+                color: MIXED_COLOR,
                 score: finalScore,
                 killed: state.killedSoFar,
                 accuracy,
@@ -448,7 +448,7 @@ export default function App() {
             >
               📥 Save card
             </button>
-            <button onClick={() => setShowLeaderboard(state.mode)} style={secondaryBtn()}>
+            <button onClick={() => setShowLeaderboard(true)} style={secondaryBtn()}>
               🏆 Leaderboard
             </button>
             <button onClick={restart} style={secondaryBtn()}>
@@ -458,9 +458,8 @@ export default function App() {
         </div>
         {showLeaderboard && (
           <LeaderboardModal
-            mode={showLeaderboard}
-            onClose={() => setShowLeaderboard(null)}
-            kindLabel={t(`kind.${showLeaderboard}` as 'kind.add')}
+            mode={state.mode}
+            onClose={() => setShowLeaderboard(false)}
           />
         )}
       </div>
@@ -518,6 +517,13 @@ export default function App() {
           {state.phase === 'paused' ? '▶ Resume' : '⏸ Pause'}
         </button>
       </div>
+
+      {showLtrBanner && (
+        <LtrBanner onClose={() => {
+          localStorage.setItem('nd:tutorial:leftToRight', '1');
+          setShowLtrBanner(false);
+        }} />
+      )}
 
       {/* Falling lane */}
       <div style={{
@@ -958,8 +964,8 @@ function primaryBtn(color: string): React.CSSProperties {
 }
 
 function LeaderboardModal({
-  mode, onClose, kindLabel,
-}: { mode: EquationKind; onClose: () => void; kindLabel: string }) {
+  mode, onClose,
+}: { mode: EquationKind; onClose: () => void }) {
   const entries = getLeaderboard(mode);
   return (
     <div
@@ -987,7 +993,7 @@ function LeaderboardModal({
           marginBottom: 12,
         }}>
           <div style={{ fontSize: 18, fontWeight: 800 }}>
-            🏆 Top 10 · {MODE_META[mode].glyph} {kindLabel}
+            🏆 Top 10 · {MIXED_GLYPH} Mixed
           </div>
           <button onClick={onClose} style={{
             background: 'transparent', border: 'none',
@@ -1279,6 +1285,48 @@ function HeroBlock({ taglineLabel }: { taglineLabel: string }) {
       }}>
         {taglineLabel}
       </div>
+    </div>
+  );
+}
+
+function LtrBanner({ onClose }: { onClose: () => void }) {
+  const [fading, setFading] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setFading(true), 4500);
+    const t2 = setTimeout(onClose, 5200);
+    return () => { clearTimeout(t); clearTimeout(t2); };
+  }, [onClose]);
+
+  return (
+    <div style={{
+      width: '100%', maxWidth: 320,
+      background: 'linear-gradient(135deg, rgba(99,102,241,0.85), rgba(139,92,246,0.85))',
+      border: '1px solid rgba(255,255,255,0.22)',
+      borderRadius: 14,
+      padding: '10px 14px',
+      display: 'flex', alignItems: 'flex-start', gap: 10,
+      boxShadow: '0 6px 20px rgba(99,102,241,0.4)',
+      opacity: fading ? 0 : 1,
+      transition: 'opacity 0.7s ease',
+      position: 'relative',
+    }}>
+      <span style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }}>🧮</span>
+      <div style={{ flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.95)', lineHeight: 1.5 }}>
+        <div style={{ fontWeight: 800, marginBottom: 2 }}>수식은 왼쪽부터 순서대로 풀어요!</div>
+        <div>예: 3 + 2 × 4 → 5 × 4 → 20</div>
+        <div style={{ opacity: 0.75, fontSize: 11, marginTop: 2 }}>(× ÷ 먼저 X, 학교에서 배운 순서랑 달라요)</div>
+      </div>
+      <button
+        onClick={() => { setFading(true); setTimeout(onClose, 700); }}
+        style={{
+          background: 'transparent', border: 'none',
+          color: 'rgba(255,255,255,0.7)', fontSize: 16,
+          cursor: 'pointer', padding: '0 2px', flexShrink: 0,
+          lineHeight: 1,
+        }}
+        aria-label="닫기"
+      >×</button>
     </div>
   );
 }
