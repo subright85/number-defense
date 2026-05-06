@@ -921,7 +921,7 @@ export default function App() {
       >
         <div style={{
           fontSize: 32, fontWeight: 800, color: 'white',
-          background: 'linear-gradient(90deg, #818cf8, #f472b6, #fbbf24)',
+          background: 'linear-gradient(90deg, #fbbf24, #f97316, #ef4444)',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
         }}>
@@ -987,7 +987,7 @@ function Title({ small, taglineLabel }: { small?: boolean; taglineLabel?: string
         fontSize: small ? 18 : 28,
         fontWeight: 800,
         letterSpacing: '-0.02em',
-        background: 'linear-gradient(90deg, #818cf8, #f472b6, #fbbf24)',
+        background: 'linear-gradient(90deg, #fbbf24, #f97316, #ef4444)',
         WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
         backgroundClip: 'text',
       }}>
@@ -1394,7 +1394,7 @@ function HeroBlock({ taglineLabel }: { taglineLabel: string }) {
         fontSize: 38,
         fontWeight: 900,
         letterSpacing: '-0.025em',
-        background: 'linear-gradient(90deg, #818cf8, #f472b6, #fbbf24)',
+        background: 'linear-gradient(90deg, #fbbf24, #f97316, #ef4444)',
         WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
         backgroundClip: 'text',
         textShadow: '0 4px 24px rgba(0,0,0,0.4)',
