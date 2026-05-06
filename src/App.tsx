@@ -974,11 +974,12 @@ export default function App() {
             if (typeof window !== 'undefined') window.localStorage.setItem('nd_onboarded', '1');
           }}
           style={{
-            marginTop: 8, fontSize: 11,
+            marginTop: 8, fontSize: 13,
             background: 'rgba(255,255,255,0.18)',
             border: 'none', color: 'white',
-            padding: '4px 10px', borderRadius: 999,
+            padding: '8px 16px', borderRadius: 999,
             fontWeight: 700, cursor: 'pointer',
+            minHeight: 36,
           }}
         >
           got it
