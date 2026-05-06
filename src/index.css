@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --nd-primary:       #FFD93D;
+  --nd-accent-red:    #FF6B6B;
+  --nd-accent-orange: #FF9F43;
+  --nd-accent-green:  #6BCF7F;
+  --nd-accent-blue:   #4ECDC4;
+  --nd-accent-purple: #A78BFA;
+  --nd-bg-deep:       #0a0a1a;
+  --nd-bg-mid:        #1e1b4b;
+  --nd-text-primary:  #f5f5fa;
+  --nd-text-muted:    rgba(255,255,255,0.65);
+}
+
 @keyframes moonGlow {
   0%, 100% { opacity: 0.85; transform: scale(1); }
   50%       { opacity: 1;    transform: scale(1.04); }

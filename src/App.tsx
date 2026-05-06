@@ -88,7 +88,7 @@ const HudIcons = {
 const LANE_HEIGHT = 460;
 const LANE_WIDTH  = 320;
 
-const MIXED_COLOR = '#6366f1';
+const MIXED_COLOR = '#FFD93D';
 const MIXED_GLYPH = '∞';
 
 const MODE_META: Record<EquationKind, { color: string; label: string; glyph: string }> = {
@@ -441,14 +441,14 @@ export default function App() {
         <LocaleToggle locale={locale} onToggle={toggleLocale} />
         <MuteToggle muted={muted} onToggle={() => { unlockAudio(); const next = !muted; setMuted(next); setMutedState(next); }} />
         <div style={{ textAlign: 'center', maxWidth: 360, padding: 24 }}>
-          <h1 style={{ fontSize: 28, margin: 0, color: '#f87171' }}>
+          <h1 style={{ fontSize: 28, margin: 0, color: 'var(--nd-accent-red)' }}>
             {state.isDaily ? '🎯 Daily — Game Over' : t('over.gameover')}
           </h1>
           <div style={{ marginTop: 18, fontSize: 14, color: 'rgba(255,255,255,0.78)', lineHeight: 1.7 }}>
             <div>
               {state.isDaily ? '🎯 Daily' : `${MIXED_GLYPH} Mixed`}
               {state.isDaily && <span style={{ opacity: 0.5, margin: '0 6px' }}>·</span>}
-              {state.isDaily && <span style={{ color: '#fbbf24', fontWeight: 700 }}>{state.dailyDateKey}</span>}
+              {state.isDaily && <span style={{ color: 'var(--nd-primary)', fontWeight: 700 }}>{state.dailyDateKey}</span>}
               <span style={{ opacity: 0.5, margin: '0 6px' }}>·</span>
               {survivedSec}s
             </div>
@@ -458,7 +458,7 @@ export default function App() {
             <div style={{ marginTop: 16 }}>
               <div style={{
                 fontSize: 72, fontWeight: 900, lineHeight: 1,
-                color: '#fbbf24',
+                color: 'var(--nd-primary)',
                 fontFamily: "'JetBrains Mono', monospace",
                 textShadow: '0 4px 24px rgba(251,191,36,0.45)',
                 fontVariantNumeric: 'tabular-nums',
@@ -472,9 +472,9 @@ export default function App() {
             {hsSnap && hsSnap.isNew && !state.isDaily && (
               <div style={{
                 marginTop: 8, fontSize: 12, fontWeight: 800,
-                color: '#34d399',
-                background: 'rgba(16,185,129,0.15)',
-                border: '1px solid rgba(16,185,129,0.4)',
+                color: 'var(--nd-accent-green)',
+                background: 'rgba(107,207,127,0.15)',
+                border: '1px solid rgba(107,207,127,0.4)',
                 borderRadius: 8, padding: '6px 12px', display: 'inline-block',
               }}>
                 ⭐ NEW BEST · prev {hsSnap.previous}
@@ -487,9 +487,9 @@ export default function App() {
               return (
                 <div style={{
                   marginTop: 8, fontSize: 12, fontWeight: 800,
-                  color: isToday ? '#34d399' : '#fbbf24',
-                  background: isToday ? 'rgba(16,185,129,0.15)' : 'rgba(251,191,36,0.12)',
-                  border: `1px solid ${isToday ? 'rgba(16,185,129,0.4)' : 'rgba(251,191,36,0.4)'}`,
+                  color: isToday ? 'var(--nd-accent-green)' : 'var(--nd-primary)',
+                  background: isToday ? 'rgba(107,207,127,0.15)' : 'rgba(255,217,61,0.12)',
+                  border: `1px solid ${isToday ? 'rgba(107,207,127,0.4)' : 'rgba(255,217,61,0.4)'}`,
                   borderRadius: 8, padding: '6px 12px', display: 'inline-block',
                 }}>
                   {isToday ? '⭐ NEW DAILY BEST' : `today's best · ${todayBest.score}`}
@@ -497,7 +497,7 @@ export default function App() {
               );
             })()}
             {hsSnap && !hsSnap.isNew && hsSnap.rank && (
-              <div style={{ marginTop: 6, fontSize: 11, color: '#fbbf24', fontWeight: 700 }}>
+              <div style={{ marginTop: 6, fontSize: 11, color: 'var(--nd-primary)', fontWeight: 700 }}>
                 Top 10 · ranked #{hsSnap.rank} (best {hsSnap.previous})
               </div>
             )}
@@ -587,13 +587,13 @@ export default function App() {
       <LocaleToggle locale={locale} onToggle={toggleLocale} />
       <Title small taglineLabel={t('tagline')} />
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <Pill icon={HudIcons.heart('#ef4444')} label={state.lives} accent="#ef4444" />
-        <Pill icon={HudIcons.target('#34d399')} label={`${accuracy}%`} accent="#34d399" />
+        <Pill icon={HudIcons.heart('var(--nd-accent-red)')} label={state.lives} accent="var(--nd-accent-red)" />
+        <Pill icon={HudIcons.target('var(--nd-accent-green)')} label={`${accuracy}%`} accent="var(--nd-accent-green)" />
         <Pill icon={HudIcons.star('#a78bfa')} label={state.score} accent="#a78bfa" />
         <Pill icon={HudIcons.balloon('#38bdf8')} label={state.killedSoFar} accent="#38bdf8" />
-        <Pill icon={HudIcons.timer('#fbbf24')} label={`${survivedSec}s`} accent="#fbbf24" />
+        <Pill icon={HudIcons.timer('var(--nd-primary)')} label={`${survivedSec}s`} accent="var(--nd-primary)" />
         {state.combo >= 2 && (
-          <Pill icon={HudIcons.flame('#f97316')} label={`x${state.combo}`} accent="#f97316" />
+          <Pill icon={HudIcons.flame('var(--nd-accent-orange)')} label={`x${state.combo}`} accent="var(--nd-accent-orange)" />
         )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -635,9 +635,9 @@ export default function App() {
         width: LANE_WIDTH,
         height: LANE_HEIGHT,
         background:
-          'linear-gradient(180deg, rgba(99,102,241,0.10) 0%, rgba(99,102,241,0.02) 30%, rgba(0,0,0,0) 100%)',
+          'linear-gradient(180deg, rgba(78,205,196,0.10) 0%, rgba(78,205,196,0.02) 30%, rgba(0,0,0,0) 100%)',
         border: '1px solid rgba(255,255,255,0.08)',
-        borderBottom: '3px solid #ef4444',
+        borderBottom: '3px solid var(--nd-accent-red)',
         borderRadius: 16,
         overflow: 'hidden',
         boxShadow: '0 4px 24px rgba(0,0,0,0.5), inset 0 0 30px rgba(255,255,255,0.02)',
@@ -837,20 +837,20 @@ export default function App() {
                 width: 48, height: 48,
                 borderRadius: 10,
                 background: slot.value !== null
-                  ? 'linear-gradient(135deg, #818cf8, #4f46e5)'
+                  ? 'linear-gradient(135deg, #A78BFA, #7c3aed)'
                   : isHoverDrop
-                    ? 'rgba(99,102,241,0.18)'
+                    ? 'rgba(167,139,250,0.18)'
                     : 'rgba(255,255,255,0.04)',
                 border: slot.value !== null
-                  ? '1.5px solid #818cf8'
+                  ? '1.5px solid var(--nd-accent-purple)'
                   : isHoverDrop
-                    ? '2px dashed #818cf8'
+                    ? '2px dashed var(--nd-accent-purple)'
                     : '1.5px dashed rgba(255,255,255,0.25)',
                 fontSize: 18, fontWeight: 800,
                 color: 'white',
                 cursor: slot.value !== null ? 'pointer' : 'default',
                 fontFamily: "'JetBrains Mono', monospace",
-                boxShadow: slot.value !== null ? '0 2px 6px rgba(99,102,241,0.5)' : 'none',
+                boxShadow: slot.value !== null ? '0 2px 6px rgba(167,139,250,0.5)' : 'none',
                 transition: 'background 100ms, border 100ms',
               }}
             >
@@ -957,13 +957,13 @@ export default function App() {
           right: 16, bottom: 16,
           zIndex: 220,
           maxWidth: 240,
-          background: 'rgba(99, 102, 241, 0.95)',
+          background: 'rgba(78, 205, 196, 0.95)',
           color: 'white',
           padding: '10px 14px',
           borderRadius: 14,
           fontSize: 12, fontWeight: 700,
           lineHeight: 1.5,
-          boxShadow: '0 8px 24px rgba(99,102,241,0.55)',
+          boxShadow: '0 8px 24px rgba(78,205,196,0.5)',
           border: '1px solid rgba(255,255,255,0.18)',
         }}
       >
@@ -999,7 +999,7 @@ export default function App() {
       >
         <div style={{
           fontSize: 32, fontWeight: 800, color: 'white',
-          background: 'linear-gradient(90deg, #fbbf24, #f97316, #ef4444)',
+          background: 'linear-gradient(90deg, var(--nd-primary), var(--nd-accent-orange), var(--nd-accent-red))',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
         }}>
@@ -1504,12 +1504,12 @@ function LtrBanner({ onClose }: { onClose: () => void }) {
   return (
     <div style={{
       width: '100%', maxWidth: 320,
-      background: 'linear-gradient(135deg, rgba(99,102,241,0.85), rgba(139,92,246,0.85))',
+      background: 'linear-gradient(135deg, rgba(167,139,250,0.85), rgba(124,58,237,0.85))',
       border: '1px solid rgba(255,255,255,0.22)',
       borderRadius: 14,
       padding: '10px 14px',
       display: 'flex', alignItems: 'flex-start', gap: 10,
-      boxShadow: '0 6px 20px rgba(99,102,241,0.4)',
+      boxShadow: '0 6px 20px rgba(167,139,250,0.4)',
       opacity: fading ? 0 : 1,
       transition: 'opacity 0.7s ease',
       position: 'relative',
