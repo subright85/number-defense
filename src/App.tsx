@@ -997,7 +997,7 @@ export default function App() {
             border: 'none', color: 'white',
             padding: '8px 16px', borderRadius: 999,
             fontWeight: 700, cursor: 'pointer',
-            minHeight: 36,
+            minHeight: 44,
           }}
         >
           got it
