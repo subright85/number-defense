@@ -9,40 +9,59 @@ import { BackgroundLayer } from './components/BackgroundLayer';
 import { playPop, playMiss, playLifeLost, playStart, unlockAudio, isMuted, setMuted } from './sfx';
 import type { EquationKind } from './game/types';
 
+function useCountUp(target: number, durationMs = 700): number {
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    setDisplay(0);
+    if (target === 0) return;
+    const start = performance.now();
+    let raf: number;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / durationMs);
+      const ease = 1 - Math.pow(1 - t, 3);
+      setDisplay(Math.round(ease * target));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, durationMs]);
+  return display;
+}
+
 // ── HUD icon set (Lucide-style inline SVGs) ──────────
 const HudIcons = {
   heart: (c: string) => (
-    <svg width={14} height={14} viewBox="0 0 24 24" fill={c} stroke="none" style={{ display:'block' }}>
+    <svg width={20} height={20} viewBox="0 0 24 24" fill={c} stroke="none" style={{ display:'block' }}>
       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
     </svg>
   ),
   target: (c: string) => (
-    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" style={{ display:'block' }}>
+    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" style={{ display:'block' }}>
       <circle cx="12" cy="12" r="10" />
       <circle cx="12" cy="12" r="5.5" />
       <circle cx="12" cy="12" r="1.8" fill={c} stroke="none" />
     </svg>
   ),
   star: (c: string) => (
-    <svg width={14} height={14} viewBox="0 0 24 24" fill={c} stroke="none" style={{ display:'block' }}>
+    <svg width={20} height={20} viewBox="0 0 24 24" fill={c} stroke="none" style={{ display:'block' }}>
       <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
     </svg>
   ),
   balloon: (c: string) => (
-    <svg width={11} height={15} viewBox="0 0 22 30" style={{ display:'block' }}>
+    <svg width={15} height={21} viewBox="0 0 22 30" style={{ display:'block' }}>
       <ellipse cx="11" cy="10.5" rx="9" ry="9.5" fill={c} />
       <path d="M11 20 Q8.5 24 11 27" stroke={c} strokeWidth={1.8} strokeLinecap="round" fill="none" />
       <ellipse cx="9" cy="7" rx="2.5" ry="1.5" fill="rgba(255,255,255,0.28)" />
     </svg>
   ),
   timer: (c: string) => (
-    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ display:'block' }}>
+    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ display:'block' }}>
       <circle cx="12" cy="12" r="9" />
       <polyline points="12,7 12,12 15.5,14.5" />
     </svg>
   ),
   flame: (c: string) => (
-    <svg width={11} height={14} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ display:'block' }}>
+    <svg width={15} height={20} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ display:'block' }}>
       <path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 01-7 7 7 7 0 01-7-7 3.5 3.5 0 013.5-3.5c1.4 0 2.5 1 2.5 2.5" />
     </svg>
   ),
@@ -90,6 +109,11 @@ export default function App() {
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem('nd_onboarded') !== '1';
   });
+
+  const scoreForCountUp = state.phase === 'gameover'
+    ? Math.round(state.score * (state.attempts > 0 ? state.hits / state.attempts : 0))
+    : 0;
+  const animatedScore = useCountUp(scoreForCountUp);
 
   useEffect(() => {
     loadBalance().then(() => { restart(); setLoaded(true); });
@@ -282,6 +306,24 @@ export default function App() {
       <div style={fullCenterStyle}>
         <LocaleToggle locale={locale} onToggle={toggleLocale} />
         <MuteToggle muted={muted} onToggle={() => { unlockAudio(); const next = !muted; setMuted(next); setMutedState(next); }} />
+
+        {/* Decorative demo balloons — brand first-impression */}
+        {([
+          { variant: 0, style: { left: '7%',  top: '12%' }, dur: '2.8s', delay: '0s',    opacity: 0.35, num: 7 },
+          { variant: 2, style: { right: '6%', top: '18%' }, dur: '3.3s', delay: '0.5s',  opacity: 0.4,  num: 4 },
+          { variant: 4, style: { left: '11%', bottom: '22%' }, dur: '2.5s', delay: '1.1s', opacity: 0.3, num: 9 },
+          { variant: 1, style: { right: '9%', bottom: '18%' }, dur: '3.8s', delay: '0.3s', opacity: 0.38, num: 2 },
+        ] as const).map((b, i) => (
+          <div key={i} style={{
+            position: 'absolute', ...b.style,
+            opacity: b.opacity, pointerEvents: 'none',
+            animation: `balloonBob ${b.dur} ease-in-out infinite ${b.delay}`,
+            zIndex: 0,
+          }}>
+            <Balloon number={b.num} variant={b.variant} />
+          </div>
+        ))}
+
         <div style={{
           maxWidth: 420, width: '100%', padding: '32px 20px 24px',
           display: 'flex', flexDirection: 'column', gap: 16,
@@ -376,11 +418,19 @@ export default function App() {
             <div>{t('over.killedPassed')}: <b>{state.killedSoFar}</b> · <b>{state.reachedBaseSoFar}</b></div>
             <div>{t('over.accuracy')}: <b>{accuracy}%</b> ({state.hits}/{state.attempts})</div>
             <div>🔥 Best combo: <b>×{state.bestCombo}</b></div>
-            <div style={{ marginTop: 12, fontSize: 22 }}>
-              <b style={{ color: '#fbbf24' }}>{finalScore}</b>
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginLeft: 8 }}>
+            <div style={{ marginTop: 16 }}>
+              <div style={{
+                fontSize: 72, fontWeight: 900, lineHeight: 1,
+                color: '#fbbf24',
+                fontFamily: "'JetBrains Mono', monospace",
+                textShadow: '0 4px 24px rgba(251,191,36,0.45)',
+                fontVariantNumeric: 'tabular-nums',
+              }}>
+                {animatedScore}
+              </div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>
                 = {state.score} × {accuracy}%
-              </span>
+              </div>
             </div>
             {hsSnap && hsSnap.isNew && !state.isDaily && (
               <div style={{
@@ -941,16 +991,16 @@ function MuteToggle({ muted, onToggle }: { muted: boolean; onToggle: () => void 
 function Pill({ icon, label, accent }: { icon: React.ReactNode; label: string | number; accent: string }) {
   return (
     <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 5,
-      padding: '4px 10px', borderRadius: 999,
-      background: 'rgba(255,255,255,0.04)',
-      border: `1px solid ${accent}33`,
-      fontSize: 13, fontWeight: 700,
+      display: 'inline-flex', alignItems: 'center', gap: 6,
+      padding: '6px 13px', borderRadius: 999,
+      background: 'rgba(255,255,255,0.05)',
+      border: `1px solid ${accent}44`,
+      fontSize: 17, fontWeight: 700,
       color: '#f5f5fa',
       fontVariantNumeric: 'tabular-nums',
       fontFamily: "'JetBrains Mono', monospace",
     }}>
-      <span aria-hidden style={{ filter: `drop-shadow(0 0 4px ${accent}88)`, display: 'flex', alignItems: 'center' }}>{icon}</span>
+      <span aria-hidden style={{ filter: `drop-shadow(0 0 5px ${accent}99)`, display: 'flex', alignItems: 'center' }}>{icon}</span>
       <span>{label}</span>
     </span>
   );
@@ -1256,6 +1306,7 @@ function HeroBlock({ taglineLabel }: { taglineLabel: string }) {
       position: 'relative',
       textAlign: 'center',
       paddingTop: 12, paddingBottom: 4,
+      animation: 'heroEntrance 0.4s ease-out both',
     }}>
       {/* Floating mini balloons left + right */}
       <div style={{
