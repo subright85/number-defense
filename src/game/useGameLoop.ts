@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import type { EquationKind, GameState } from './types';
 import {
   createInitialState, startEndlessRun, startDailyRun, pauseGame, resumeGame,
-  spawnEnemy, tickEnemies, refillPool,
+  spawnEnemy, tickEnemies, refillPool, endWave,
   tapPoolEntry, dropIntoSlot, untapEquationSlot, clearEquation, submitEquation,
   getStage, mulberry32, dailySeed,
 } from './engine';
@@ -75,8 +75,18 @@ export function useGameLoop() {
         next = tickEnemies(next, now);
         if (
           next.phase === 'playing' &&
+          next.spawnedSoFar < stage.spawnPerWave &&
           now - next.lastSpawnAt >= stage.spawnIntervalMs
         ) {
+          next = spawnEnemy(next, now, rngRef.current);
+        }
+        // Wave complete: all wave enemies spawned and cleared
+        if (
+          next.phase === 'playing' &&
+          next.spawnedSoFar >= stage.spawnPerWave &&
+          next.enemies.length === 0
+        ) {
+          next = endWave(next, rngRef.current);
           next = spawnEnemy(next, now, rngRef.current);
         }
         return next;
@@ -122,7 +132,10 @@ export function useGameLoop() {
         };
         setFlashes(prev => [...prev, flash]);
       }
-      return result.state;
+      const nextState = result.spawnChildren?.length
+        ? { ...result.state, enemies: [...result.state.enemies, ...result.spawnChildren] }
+        : result.state;
+      return nextState;
     });
   }, []);
 

@@ -77,6 +77,7 @@ export function buildStagesFromW1(w1: W1Json): Stage[] {
         numberMax: range.max,
         enemyMaxValue: w1.constraints.global.maxAnswerValue,
         spawnIntervalMs,
+        spawnPerWave,
         fallDurationMs,
         label: `${bracket} · Tier ${tier}`,
       });

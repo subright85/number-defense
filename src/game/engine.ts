@@ -100,6 +100,7 @@ function normalizeStage(s: Stage): Stage {
   if (!result.ageBracket) {
     result.ageBracket = '7-9';
   }
+  if (!result.spawnPerWave) result.spawnPerWave = 3;
   if (result.kind === 'div' && result.variableCount > 2) {
     result.variableCount = 2;
     result.allowedOps = result.allowedOps.filter((op: FormulaKind) => op !== 'div');
@@ -467,6 +468,7 @@ export function endWave(s: GameState, rng: () => number = Math.random): GameStat
     waveEntropies: newEntropies,
     stageIndex: newTier.index,
     equation: makeEquationSlots(newTier),
+    spawnedSoFar: 0,
   };
 }
 

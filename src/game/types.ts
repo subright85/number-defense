@@ -22,6 +22,7 @@ export interface Stage {
   numberMax: number;
   enemyMaxValue: number;
   spawnIntervalMs: number;
+  spawnPerWave: number;
   fallDurationMs: number;
   label: string;
 }
