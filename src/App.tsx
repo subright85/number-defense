@@ -131,6 +131,14 @@ export default function App() {
     return window.localStorage.getItem('nd_onboarded') !== '1';
   });
 
+  const [windowWidth, setWindowWidth] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 0);
+  useEffect(() => {
+    const h = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', h, { passive: true });
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  const isWide = windowWidth >= 1024;
+
   const scoreForCountUp = state.phase === 'gameover'
     ? Math.round(state.score * (state.attempts > 0 ? state.hits / state.attempts : 0))
     : 0;
@@ -340,6 +348,8 @@ export default function App() {
     return (
       <>
       <BackgroundLayer />
+      {isWide && <WideMenuLeft mode={state.mode} />}
+      {isWide && <WideMenuRight />}
       <div style={fullCenterStyle}>
         <LocaleToggle locale={locale} onToggle={toggleLocale} />
         <MuteToggle muted={muted} onToggle={() => { unlockAudio(); const next = !muted; setMuted(next); setMutedState(next); }} />
@@ -569,6 +579,8 @@ export default function App() {
   return (
     <>
     <BackgroundLayer />
+    {isWide && <WideGameLeft state={state} />}
+    {isWide && <WideGameRight state={state} />}
 
     {/* Combo vignette — orange/red edge glow proportional to combo */}
     {state.combo >= 3 && (
@@ -1149,6 +1161,153 @@ function Pill({ icon, label, accent }: { icon: React.ReactNode; label: string | 
       <span aria-hidden style={{ filter: `drop-shadow(0 0 5px ${accent}99)`, display: 'flex', alignItems: 'center' }}>{icon}</span>
       <span>{label}</span>
     </span>
+  );
+}
+
+const WIDE_PANEL_STYLE: React.CSSProperties = {
+  position: 'fixed', top: 0, width: 220, height: '100vh',
+  padding: '80px 14px 24px',
+  display: 'flex', flexDirection: 'column', gap: 12,
+  overflowY: 'auto',
+  zIndex: 1,
+  background: 'rgba(10,10,26,0.6)',
+  backdropFilter: 'blur(8px)',
+  borderColor: 'rgba(255,255,255,0.06)',
+};
+
+function WideMenuLeft({ mode }: { mode: EquationKind }) {
+  const entries = getLeaderboard(mode).slice(0, 5);
+  return (
+    <div style={{ ...WIDE_PANEL_STYLE, left: 0, borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.4)', letterSpacing: 1, textTransform: 'uppercase' }}>
+        🏆 Top Scores
+      </div>
+      {entries.length === 0 && (
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>No scores yet</div>
+      )}
+      {entries.map((e, i) => (
+        <div key={i} style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '8px 10px', borderRadius: 10,
+          background: i === 0 ? 'rgba(255,217,61,0.08)' : 'rgba(255,255,255,0.03)',
+          border: `1px solid ${i === 0 ? 'rgba(255,217,61,0.2)' : 'rgba(255,255,255,0.06)'}`,
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 900, color: i === 0 ? 'var(--nd-primary)' : 'rgba(255,255,255,0.45)', width: 18 }}>
+            {i + 1}
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--nd-text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>
+              {e.score}
+            </div>
+            {e.name && (
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {e.name}
+              </div>
+            )}
+          </div>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textAlign: 'right' }}>
+            {e.accuracyPct}%<br />{e.survivedSec}s
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function WideMenuRight() {
+  return (
+    <div style={{ ...WIDE_PANEL_STYLE, right: 0, borderLeft: '1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.4)', letterSpacing: 1, textTransform: 'uppercase' }}>
+        💡 How to Play
+      </div>
+      {[
+        { icon: '🎈', text: 'Balloons fall — match their number' },
+        { icon: '🔢', text: 'Tap number tiles to fill the equation' },
+        { icon: '✅', text: 'Submit when all slots are filled' },
+        { icon: '🔥', text: 'Hit 3 in a row for a combo bonus' },
+        { icon: '🛡️', text: 'Shielded balloons need the right op' },
+      ].map(({ icon, text }) => (
+        <div key={icon} style={{
+          display: 'flex', gap: 8, alignItems: 'flex-start',
+          fontSize: 12, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5,
+        }}>
+          <span style={{ flexShrink: 0 }}>{icon}</span>
+          <span>{text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function WideGameLeft({ state }: { state: import('./game/types').GameState }) {
+  const acc = state.attempts > 0 ? Math.round((state.hits / state.attempts) * 100) : 0;
+  return (
+    <div style={{ ...WIDE_PANEL_STYLE, left: 0, borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.4)', letterSpacing: 1, textTransform: 'uppercase' }}>
+        📊 Stats
+      </div>
+      {([
+        { label: 'Score',    value: state.score,       color: 'var(--nd-primary)' },
+        { label: 'Accuracy', value: `${acc}%`,         color: 'var(--nd-accent-green)' },
+        { label: 'Killed',   value: state.killedSoFar, color: 'var(--nd-accent-blue)' },
+        { label: 'Lives',    value: state.lives,       color: 'var(--nd-accent-red)' },
+        { label: 'Best ×',   value: state.bestCombo,   color: 'var(--nd-accent-orange)' },
+      ] as const).map(({ label, value, color }) => (
+        <div key={label} style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '7px 10px', borderRadius: 8,
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.05)',
+        }}>
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>{label}</span>
+          <span style={{ fontSize: 14, fontWeight: 900, color, fontFamily: "'JetBrains Mono', monospace" }}>{value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function WideGameRight({ state }: { state: import('./game/types').GameState }) {
+  const stage = getStage(state.stageIndex);
+  return (
+    <div style={{ ...WIDE_PANEL_STYLE, right: 0, borderLeft: '1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.4)', letterSpacing: 1, textTransform: 'uppercase' }}>
+        🌊 Wave
+      </div>
+      <div style={{
+        padding: '10px 12px', borderRadius: 10,
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        display: 'flex', flexDirection: 'column', gap: 4,
+      }}>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Stage</div>
+        <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--nd-accent-purple)' }}>
+          {stage?.label ?? '—'}
+        </div>
+      </div>
+      <div style={{
+        padding: '10px 12px', borderRadius: 10,
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        display: 'flex', flexDirection: 'column', gap: 4,
+      }}>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Enemies on screen</div>
+        <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--nd-accent-red)', fontFamily: "'JetBrains Mono', monospace" }}>
+          {state.enemies.length}
+        </div>
+      </div>
+      <div style={{
+        padding: '10px 12px', borderRadius: 10,
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        display: 'flex', flexDirection: 'column', gap: 4,
+      }}>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Combo</div>
+        <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--nd-accent-orange)', fontFamily: "'JetBrains Mono', monospace" }}>
+          ×{state.combo}
+        </div>
+      </div>
+    </div>
   );
 }
 
