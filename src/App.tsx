@@ -96,6 +96,9 @@ export default function App() {
   const [nickname, setNicknameState] = useState<string>(() => getNickname());
   const lastFlashIdRef = useRef<string | null>(null);
   const lastReachedRef = useRef<number>(0);
+  const prevComboRef = useRef<number>(0);
+  const [comboFloaters, setComboFloaters] = useState<{ id: number; count: number }[]>([]);
+  const [laneShaking, setLaneShaking] = useState(false);
   const [drag, setDrag] = useState<{
     entryId: string; number: number;
     x: number; y: number;
@@ -182,6 +185,22 @@ export default function App() {
       prevStageIndexRef.current = state.stageIndex;
     }
   }, [state.stageIndex, state.phase]);
+
+  // Combo visual effects — vignette, floater, shake
+  useEffect(() => {
+    const prev = prevComboRef.current;
+    const curr = state.combo;
+    if (curr > prev && curr >= 3) {
+      const id = Date.now();
+      setComboFloaters(fs => [...fs, { id, count: curr }]);
+      setTimeout(() => setComboFloaters(fs => fs.filter(f => f.id !== id)), 800);
+    }
+    if (prev >= 2 && curr < prev) {
+      setLaneShaking(true);
+      setTimeout(() => setLaneShaking(false), 450);
+    }
+    prevComboRef.current = curr;
+  }, [state.combo]);
 
   // Dismiss onboarding on first hit
   useEffect(() => {
@@ -532,6 +551,16 @@ export default function App() {
   return (
     <>
     <BackgroundLayer />
+
+    {/* Combo vignette — orange/red edge glow proportional to combo */}
+    {state.combo >= 3 && (
+      <div style={{
+        position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
+        background: `radial-gradient(ellipse at center, transparent 35%, rgba(249,115,22,${Math.min(state.combo * 0.045, 0.38).toFixed(2)}) 100%)`,
+        transition: 'opacity 0.4s ease',
+      }} />
+    )}
+
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       minHeight: '100vh', padding: '12px 12px 18px', gap: 10,
@@ -594,7 +623,18 @@ export default function App() {
         borderRadius: 16,
         overflow: 'hidden',
         boxShadow: '0 4px 24px rgba(0,0,0,0.5), inset 0 0 30px rgba(255,255,255,0.02)',
+        animation: laneShaking ? 'comboShake 0.45s ease-out' : 'none',
       }}>
+        {/* Combo floaters */}
+        {comboFloaters.map(f => (
+          <div
+            key={f.id}
+            className="nd-combo-floater"
+            style={{ left: '50%', top: '30%', transform: 'translateX(-50%)' }}
+          >
+            🔥 ×{f.count} 콤보!
+          </div>
+        ))}
         <div style={{
           position: 'absolute', left: '50%', top: 0, bottom: 0,
           width: 1, background: 'rgba(255,255,255,0.04)',

@@ -102,6 +102,34 @@
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+@keyframes comboShake {
+  0%, 100% { transform: translateX(0); }
+  15%      { transform: translateX(-5px) rotate(-0.8deg); }
+  35%      { transform: translateX(4px) rotate(0.6deg); }
+  55%      { transform: translateX(-3px) rotate(-0.4deg); }
+  75%      { transform: translateX(2px) rotate(0.3deg); }
+}
+
+@keyframes comboFloat {
+  0%   { opacity: 0; transform: translateY(0) scale(0.7); }
+  15%  { opacity: 1; transform: translateY(-4px) scale(1.1); }
+  70%  { opacity: 1; transform: translateY(-20px) scale(1); }
+  100% { opacity: 0; transform: translateY(-32px) scale(0.9); }
+}
+
+.nd-combo-floater {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 900;
+  font-size: 15px;
+  color: #f97316;
+  text-shadow: 0 0 8px rgba(249,115,22,0.8), 0 1px 0 rgba(0,0,0,0.7);
+  pointer-events: none;
+  white-space: nowrap;
+  animation: comboFloat 750ms ease-out forwards;
+  position: absolute;
+  z-index: 7;
+}
+
 .pool-tile:hover:not(:disabled) {
   transform: translateY(-2px) scale(1.04);
   filter: brightness(1.05);
