@@ -9,6 +9,45 @@ import { BackgroundLayer } from './components/BackgroundLayer';
 import { playPop, playMiss, playLifeLost, playStart, unlockAudio, isMuted, setMuted } from './sfx';
 import type { EquationKind } from './game/types';
 
+// ── HUD icon set (Lucide-style inline SVGs) ──────────
+const HudIcons = {
+  heart: (c: string) => (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill={c} stroke="none" style={{ display:'block' }}>
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+  ),
+  target: (c: string) => (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" style={{ display:'block' }}>
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="5.5" />
+      <circle cx="12" cy="12" r="1.8" fill={c} stroke="none" />
+    </svg>
+  ),
+  star: (c: string) => (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill={c} stroke="none" style={{ display:'block' }}>
+      <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+    </svg>
+  ),
+  balloon: (c: string) => (
+    <svg width={11} height={15} viewBox="0 0 22 30" style={{ display:'block' }}>
+      <ellipse cx="11" cy="10.5" rx="9" ry="9.5" fill={c} />
+      <path d="M11 20 Q8.5 24 11 27" stroke={c} strokeWidth={1.8} strokeLinecap="round" fill="none" />
+      <ellipse cx="9" cy="7" rx="2.5" ry="1.5" fill="rgba(255,255,255,0.28)" />
+    </svg>
+  ),
+  timer: (c: string) => (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ display:'block' }}>
+      <circle cx="12" cy="12" r="9" />
+      <polyline points="12,7 12,12 15.5,14.5" />
+    </svg>
+  ),
+  flame: (c: string) => (
+    <svg width={11} height={14} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ display:'block' }}>
+      <path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 01-7 7 7 7 0 01-7-7 3.5 3.5 0 013.5-3.5c1.4 0 2.5 1 2.5 2.5" />
+    </svg>
+  ),
+};
+
 const LANE_HEIGHT = 460;
 const LANE_WIDTH  = 320;
 
@@ -445,13 +484,13 @@ export default function App() {
       <LocaleToggle locale={locale} onToggle={toggleLocale} />
       <Title small taglineLabel={t('tagline')} />
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <Pill icon="❤️" label={state.lives} accent="#ef4444" />
-        <Pill icon="🎯" label={`${accuracy}%`} accent="#34d399" />
-        <Pill icon="⭐" label={state.score} accent="#a78bfa" />
-        <Pill icon="🎈" label={state.killedSoFar} accent="#38bdf8" />
-        <Pill icon="⏱" label={`${survivedSec}s`} accent="#fbbf24" />
+        <Pill icon={HudIcons.heart('#ef4444')} label={state.lives} accent="#ef4444" />
+        <Pill icon={HudIcons.target('#34d399')} label={`${accuracy}%`} accent="#34d399" />
+        <Pill icon={HudIcons.star('#a78bfa')} label={state.score} accent="#a78bfa" />
+        <Pill icon={HudIcons.balloon('#38bdf8')} label={state.killedSoFar} accent="#38bdf8" />
+        <Pill icon={HudIcons.timer('#fbbf24')} label={`${survivedSec}s`} accent="#fbbf24" />
         {state.combo >= 2 && (
-          <Pill icon="🔥" label={`x${state.combo}`} accent="#f97316" />
+          <Pill icon={HudIcons.flame('#f97316')} label={`x${state.combo}`} accent="#f97316" />
         )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -866,10 +905,10 @@ function MuteToggle({ muted, onToggle }: { muted: boolean; onToggle: () => void 
   );
 }
 
-function Pill({ icon, label, accent }: { icon: string; label: string | number; accent: string }) {
+function Pill({ icon, label, accent }: { icon: React.ReactNode; label: string | number; accent: string }) {
   return (
     <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 6,
+      display: 'inline-flex', alignItems: 'center', gap: 5,
       padding: '4px 10px', borderRadius: 999,
       background: 'rgba(255,255,255,0.04)',
       border: `1px solid ${accent}33`,
@@ -878,7 +917,7 @@ function Pill({ icon, label, accent }: { icon: string; label: string | number; a
       fontVariantNumeric: 'tabular-nums',
       fontFamily: "'JetBrains Mono', monospace",
     }}>
-      <span aria-hidden style={{ filter: `drop-shadow(0 0 4px ${accent}88)` }}>{icon}</span>
+      <span aria-hidden style={{ filter: `drop-shadow(0 0 4px ${accent}88)`, display: 'flex', alignItems: 'center' }}>{icon}</span>
       <span>{label}</span>
     </span>
   );
