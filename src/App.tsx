@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { loadBalance, getStage, getHighScore, getLeaderboard, recordScore, getDailyBest, recordDaily, dailyKindForDate, dateKey, getNickname, setNickname, evaluate } from './game/engine';
+import { loadBalance, getStage, getLeaderboard, recordScore, getDailyBest, recordDaily, dailyKindForDate, dateKey, getNickname, setNickname, evaluate } from './game/engine';
 import type { LeaderboardEntry } from './game/engine';
 import { useGameLoop } from './game/useGameLoop';
 import { useT, type Locale } from './i18n';
@@ -53,6 +53,13 @@ const LANE_WIDTH  = 320;
 
 const MIXED_COLOR = '#6366f1';
 const MIXED_GLYPH = '∞';
+
+const MODE_META: Record<EquationKind, { color: string; label: string; glyph: string }> = {
+  add: { color: '#5cc28d', label: 'Addition',       glyph: '+' },
+  sub: { color: '#ff6b6b', label: 'Subtraction',    glyph: '−' },
+  mul: { color: '#ffd166', label: 'Multiplication', glyph: '×' },
+  div: { color: '#4ecdc4', label: 'Division',       glyph: '÷' },
+};
 
 export default function App() {
   const [loaded, setLoaded] = useState(false);
@@ -1327,81 +1334,6 @@ function LtrBanner({ onClose }: { onClose: () => void }) {
         }}
         aria-label="닫기"
       >×</button>
-    </div>
-  );
-}
-
-function ModeCard({
-  glyph, color, label, best, available, onClick, onLeaderboard,
-}: {
-  glyph: string; color: string; label: string;
-  best: number; available: boolean;
-  onClick: () => void; onLeaderboard: () => void;
-}) {
-  const hasScore = best > 0;
-  return (
-    <div style={{ position: 'relative' }}>
-      <button
-        onClick={onClick}
-        disabled={!available}
-        style={{
-          width: '100%',
-          background: available
-            ? `linear-gradient(140deg, ${color}cc 0%, ${color}77 100%)`
-            : 'rgba(255,255,255,0.04)',
-          border: available
-            ? `1.5px solid ${color}`
-            : '1.5px dashed rgba(255,255,255,0.18)',
-          color: 'white',
-          padding: '16px 12px 14px',
-          borderRadius: 14,
-          fontWeight: 800,
-          cursor: available ? 'pointer' : 'not-allowed',
-          opacity: available ? 1 : 0.45,
-          boxShadow: available ? `0 6px 18px ${color}55, inset 0 1px 0 rgba(255,255,255,0.18)` : 'none',
-          textAlign: 'center',
-          transition: 'transform 100ms, box-shadow 100ms, filter 100ms',
-        }}
-        className={available ? 'nd-btn' : undefined}
-      >
-        <div style={{
-          fontSize: 36,
-          fontFamily: "'JetBrains Mono', monospace",
-          lineHeight: 1,
-          textShadow: '0 2px 6px rgba(0,0,0,0.3)',
-        }}>{glyph}</div>
-        <div style={{ fontSize: 12, marginTop: 6, opacity: 0.95, letterSpacing: '0.02em' }}>
-          {label}
-        </div>
-        <div style={{
-          fontSize: 10,
-          marginTop: 8,
-          opacity: hasScore ? 0.95 : 0.55,
-          fontFamily: "'JetBrains Mono', monospace",
-          letterSpacing: '0.06em',
-        }}>
-          {available
-            ? (hasScore ? `★ ${best}` : 'PLAY')
-            : 'SOON'}
-        </div>
-      </button>
-      {available && hasScore && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onLeaderboard(); }}
-          title="Top 10"
-          style={{
-            position: 'absolute', top: 6, right: 6,
-            width: 22, height: 22, borderRadius: 11,
-            background: 'rgba(0,0,0,0.35)',
-            border: '1px solid rgba(255,255,255,0.25)',
-            color: 'white', cursor: 'pointer',
-            fontSize: 10, padding: 0,
-          }}
-          className="nd-btn"
-        >
-          🏆
-        </button>
-      )}
     </div>
   );
 }

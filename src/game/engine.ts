@@ -1,16 +1,71 @@
-// Number Defense v3 engine — endless mode per equation kind.
-import type { Enemy, EquationKind, EquationSlot, GameState, PoolEntry, Stage } from './types';
+// Number Defense v3 engine — mixed ops, enemy variety, drop pool, wave hooks.
+import type { AgeBracket, Enemy, EnemyKind, EquationKind, EquationSlot, FormulaKind, GameState, PoolEntry, Stage } from './types';
+import { pickFormulaKind, reachableTargetsMixed } from './formula';
+import { makeEnemy, pickEnemyKind, pickShieldOp, splitTarget } from './enemyTypes';
+import { partialReshuffle, pushToDropBuffer, popFromDropBuffer, shannonEntropy, needsEntropyReshuffle } from './drop';
+import { w1ToBalanceFile, type W1Json } from './balanceW1Loader';
+
+// Enemy distribution by round (from balance.json enemyDistribution.byRound)
+export type EnemyDistByRound = Partial<Record<string, Partial<Record<EnemyKind, number>>>>;
 
 interface BalanceFile {
   stages: Stage[];
   poolSize: number;
   refillDelayMs: number;
   startingLives: number;
+  enemyDistribution?: {
+    byRound: EnemyDistByRound;
+    stableFromRound: number;
+    stableDistribution: Partial<Record<EnemyKind, number>>;
+  };
+  pool?: {
+    cap: number;
+    answerGuarantee: { rerollMaxN: number; fallback: { replaceCount: number } };
+    returnJitter: { enabled: boolean; range: [number, number]; clampMin: number; clampMax: number };
+    entropyGuard: { threshold: number; window: number };
+  };
 }
 
 let _balance: BalanceFile | null = null;
 
+// Telemetry event emitter — wire up in useGameLoop to collect events.
+export type TelemetryEvent =
+  | { type: 'problem_attempt'; hit: boolean; result: number | null }
+  | { type: 'pool_reroll'; attempt: number }
+  | { type: 'pool_fallback_triggered' }
+  | { type: 'pool_entropy_sample'; entropy: number; wave: number }
+  | { type: 'wave_start'; round: number }
+  | { type: 'wave_end'; round: number; killed: number }
+  | { type: 'mid_wave_abandon' };
+
+let _telemetryHandler: ((event: TelemetryEvent) => void) | null = null;
+export function setTelemetryHandler(fn: (event: TelemetryEvent) => void) {
+  _telemetryHandler = fn;
+}
+function emit(event: TelemetryEvent) {
+  _telemetryHandler?.(event);
+}
+
+// Mutable entropy config (W2 calibration push target).
+let _entropyThreshold: number | null = null;
+let _entropyWindow: number | null = null;
+export function setEntropyConfig(threshold: number, window: number) {
+  _entropyThreshold = threshold;
+  _entropyWindow = window;
+}
+
 export async function loadBalance(): Promise<void> {
+  // Try W1 format first, fall back to legacy balance.json.
+  try {
+    const w1Res = await fetch(`/balance.W1.json?v=${Date.now()}`);
+    if (w1Res.ok) {
+      const w1 = (await w1Res.json()) as W1Json;
+      _balance = w1ToBalanceFile(w1) as BalanceFile;
+      return;
+    }
+  } catch {
+    // fall through to legacy
+  }
   const res = await fetch(`/balance.json?v=${Date.now()}`);
   const raw = (await res.json()) as BalanceFile;
   if (!Array.isArray(raw.stages)) {
@@ -33,17 +88,24 @@ export function isBalanceLoaded(): boolean {
   return _balance !== null;
 }
 
-// Normalize a stage definition before any caller sees it. Currently:
-// - `div` stages are forced to variableCount=2. A 3-element division chain
-//   has a vanishingly small valid-target ratio (each step must divide
-//   evenly), so 3-chain divs are effectively unsolvable in random pools and
-//   should never reach the engine. If a balance.json author tries it
-//   anyway, we silently downgrade rather than ship an unfair stage.
+// Normalize a stage definition before any caller sees it:
+// - `div` stages are forced to variableCount=2 (see original comment).
+// - Backfill `allowedOps` from `kind` if missing (backward compat with old balance.json).
+// - Backfill `ageBracket` default.
 function normalizeStage(s: Stage): Stage {
-  if (s.kind === 'div' && s.variableCount > 2) {
-    return { ...s, variableCount: 2 };
+  let result = { ...s };
+  if (!result.allowedOps || result.allowedOps.length === 0) {
+    result.allowedOps = [result.kind];
   }
-  return s;
+  if (!result.ageBracket) {
+    result.ageBracket = '7-9';
+  }
+  if (result.kind === 'div' && result.variableCount > 2) {
+    result.variableCount = 2;
+    result.allowedOps = result.allowedOps.filter((op: FormulaKind) => op !== 'div');
+    if (result.allowedOps.length === 0) result.allowedOps = ['add'];
+  }
+  return result;
 }
 
 export function getStage(index: number): Stage | null {
@@ -97,6 +159,31 @@ export function evaluate(values: number[], kind: EquationKind): number | null {
   return acc;
 }
 
+// ── Balance accessors ─────────────────────────────────────────
+
+export function getEnemyDistribution(round: number): Partial<Record<EnemyKind, number>> {
+  const bal = getBalance();
+  const dist = bal.enemyDistribution;
+  if (!dist) return { balloon: 1 };
+  if (round >= dist.stableFromRound) return dist.stableDistribution;
+  return dist.byRound[String(round)] ?? dist.stableDistribution;
+}
+
+export function getPoolConfig() {
+  const bal = getBalance();
+  return {
+    cap: bal.pool?.cap ?? 6,
+    rerollMaxN: bal.pool?.answerGuarantee.rerollMaxN ?? 3,
+    fallbackReplaceCount: bal.pool?.answerGuarantee.fallback.replaceCount ?? 8,
+    jitterEnabled: bal.pool?.returnJitter.enabled ?? false,
+    jitterRange: (bal.pool?.returnJitter.range ?? [-1, 1]) as [-1 | 0 | 1, -1 | 0 | 1],
+    jitterClampMin: bal.pool?.returnJitter.clampMin ?? 1,
+    jitterClampMax: bal.pool?.returnJitter.clampMax ?? 9,
+    entropyThreshold: bal.pool?.entropyGuard.threshold ?? 2.5,
+    entropyWindow: bal.pool?.entropyGuard.window ?? 5,
+  };
+}
+
 let _idCounter = 0;
 const nextId = (prefix: string) => `${prefix}_${++_idCounter}`;
 
@@ -140,16 +227,20 @@ export function makeFreshPool(stage: Stage | null, rng: () => number): PoolEntry
   return arr;
 }
 
-export function createInitialState(rng: () => number = Math.random): GameState {
+export function createInitialState(rng: () => number = Math.random, ageBracket: AgeBracket = '7-9'): GameState {
   const bal = isBalanceLoaded() ? getBalance() : null;
   const firstStage = isBalanceLoaded() ? pickTierForMode('add', 0) : null;
   return {
     phase: 'menu',
     mode: 'add',
+    ageBracket,
+    round: 1,
     stageIndex: firstStage?.index ?? 1,
     lives: bal?.startingLives ?? 5,
     score: 0,
     pool: firstStage ? makeFreshPool(firstStage, rng) : [],
+    dropBuffer: [],
+    waveEntropies: [],
     equation: firstStage ? makeEquationSlots(firstStage) : [],
     enemies: [],
     spawnedSoFar: 0,
@@ -175,10 +266,14 @@ export function startEndlessRun(s: GameState, mode: EquationKind, now: number, r
     ...s,
     phase: 'playing',
     mode,
+    ageBracket: s.ageBracket,
+    round: 1,
     stageIndex: stage.index,
     lives: bal.startingLives,
     score: 0,
     pool: makeFreshPool(stage, rng),
+    dropBuffer: [],
+    waveEntropies: [],
     equation: makeEquationSlots(stage),
     enemies: [],
     spawnedSoFar: 0,
@@ -205,10 +300,14 @@ export function startDailyRun(s: GameState, now: number, rng: () => number = Mat
     ...s,
     phase: 'playing',
     mode,
+    ageBracket: s.ageBracket,
+    round: 1,
     stageIndex: stage.index,
     lives: bal.startingLives,
     score: 0,
     pool: makeFreshPool(stage, rng),
+    dropBuffer: [],
+    waveEntropies: [],
     equation: makeEquationSlots(stage),
     enemies: [],
     spawnedSoFar: 0,
@@ -324,33 +423,132 @@ export function reachableTargets(nums: number[], stage: Stage): number[] {
   return Array.from(out);
 }
 
-// Pick an enemy target that is REACHABLE from the current pool. Returns null
-// when nothing in the pool can produce a valid in-range target — caller
-// should skip the spawn rather than ship a guaranteed-unsolvable enemy.
-function pickReachableTarget(pool: PoolEntry[], stage: Stage, rng: () => number): number | null {
+// ── Wave lifecycle ────────────────────────────────────────────
+
+// Call at wave end (all wave enemies dead or escaped). Updates round, entropy, triggers reshuffle.
+export function endWave(s: GameState, rng: () => number = Math.random): GameState {
+  const stage = getStage(s.stageIndex);
+  const cfg = getPoolConfig();
+  const threshold = _entropyThreshold ?? cfg.entropyThreshold;
+  const window = _entropyWindow ?? cfg.entropyWindow;
+
+  // Compute entropy of current pool
+  const nums = s.pool.filter(p => !p.refillingUntilMs || p.refillingUntilMs <= Date.now()).map(p => p.number);
+  const entropy = shannonEntropy(nums, stage?.numberMax ?? 9);
+  const newEntropies = [...s.waveEntropies, entropy];
+
+  emit({ type: 'pool_entropy_sample', entropy, wave: s.round });
+  emit({ type: 'wave_end', round: s.round, killed: s.killedSoFar });
+
+  const nextRound = s.round + 1;
+
+  // Entropy guard: force partial reshuffle if rolling mean < threshold
+  let pool = s.pool;
+  if (stage && needsEntropyReshuffle(newEntropies, threshold, window)) {
+    const cfg2 = getPoolConfig();
+    const reshuffled = partialReshuffle(
+      pool.map(p => p.number),
+      cfg2.fallbackReplaceCount,
+      stage.numberMax,
+      rng,
+    );
+    pool = pool.map((p, i) => ({ ...p, number: reshuffled[i] ?? p.number }));
+  }
+
+  // Advance to next tier if killedSoFar unlocks it
+  const newTier = pickTierForMode(s.mode, s.killedSoFar);
+
+  emit({ type: 'wave_start', round: nextRound });
+
+  return {
+    ...s,
+    round: nextRound,
+    pool,
+    waveEntropies: newEntropies,
+    stageIndex: newTier.index,
+    equation: makeEquationSlots(newTier),
+  };
+}
+
+// ── Splitter+Shielded co-occurrence cap (7-9세) ───────────────
+
+// Check if spawning `kind` would exceed the co-occurrence cap for this wave.
+// Returns true if spawn is allowed.
+function allowEnemyKind(
+  kind: EnemyKind,
+  currentEnemies: Enemy[],
+  ageBracket: AgeBracket,
+): boolean {
+  if (ageBracket !== '7-9') return true;
+  if (kind !== 'splitter' && kind !== 'shielded') return true;
+
+  const bal = getBalance() as ReturnType<typeof getBalance> & { constraints?: { '7-9'?: { splitterShieldedCoOccurrenceCapPercent?: number } } };
+  const cap = bal.constraints?.['7-9']?.splitterShieldedCoOccurrenceCapPercent ?? 30;
+  const total = currentEnemies.length;
+  if (total === 0) return true;
+
+  const hardCount = currentEnemies.filter(e => e.kind === 'splitter' || e.kind === 'shielded').length;
+  const wouldBePct = ((hardCount + 1) / (total + 1)) * 100;
+  return wouldBePct <= cap;
+}
+
+// Pick a reachable target using allowedOps from the stage.
+function pickReachableTargetMixed(pool: PoolEntry[], stage: Stage, rng: () => number): number | null {
   const nums = poolUsable(pool).map(p => p.number);
-  const targets = reachableTargets(nums, stage);
-  if (targets.length === 0) return null;
-  return targets[Math.floor(rng() * targets.length)];
+  const cfg = getPoolConfig();
+
+  for (let attempt = 0; attempt < cfg.rerollMaxN; attempt++) {
+    const kind = pickFormulaKind(stage.allowedOps, rng);
+    const targets = reachableTargetsMixed(nums, kind, stage);
+    if (targets.length > 0) return targets[Math.floor(rng() * targets.length)];
+    // Shuffle nums for next attempt (same pool, different order already handled by permutation)
+    nums.sort(() => rng() - 0.5);
+  }
+  return null;
 }
 
 export function spawnEnemy(s: GameState, now: number, rng: () => number = Math.random): GameState {
   const stage = getStage(s.stageIndex);
   if (!stage) return s;
-  const target = pickReachableTarget(s.pool, stage, rng);
-  // No reachable combo from the current pool — skip rather than ship a
-  // guaranteed-unsolvable enemy. The next tick's refill puts new numbers
-  // in the pool and we try again. spawnedSoFar / lastSpawnAt are unchanged
-  // so the spawn pacing self-recovers without burning a slot.
-  if (target === null) return s;
-  const enemy: Enemy = {
-    id: nextId('e'),
-    target,
-    spawnedAt: now,
-    fallDurationMs: stage.fallDurationMs,
-  };
+
+  let target = pickReachableTargetMixed(s.pool, stage, rng);
+
+  // Fallback: partial reshuffle + simple add case
+  let pool = s.pool;
+  if (target === null) {
+    const cfg = getPoolConfig();
+    const nums = partialReshuffle(
+      pool.map(p => p.number),
+      cfg.fallbackReplaceCount,
+      stage.numberMax,
+      rng,
+    );
+    pool = pool.map((p, i) => ({ ...p, number: nums[i] ?? p.number }));
+    const fallbackStage = { ...stage, allowedOps: ['add' as FormulaKind], variableCount: 2 as const };
+    const fbNums = poolUsable(pool).map(p => p.number);
+    const fbTargets = reachableTargetsMixed(fbNums, 'add', fallbackStage);
+    target = fbTargets.length > 0 ? fbTargets[Math.floor(rng() * fbTargets.length)] : null;
+    if (target === null) return s; // still nothing — skip spawn
+  }
+
+  // Pick enemy kind from distribution, respecting age-bracket co-occurrence cap
+  const dist = getEnemyDistribution(s.round);
+  let kind = pickEnemyKind(dist, rng);
+  if (!allowEnemyKind(kind, s.enemies, s.ageBracket)) {
+    kind = 'balloon'; // fallback to safe kind
+  }
+
+  // Shielded: pick a shield op from single ops in allowedOps
+  const singleAllowed = stage.allowedOps.filter(
+    (op): op is EquationKind => op !== 'mixed2op',
+  );
+  const shieldOp = kind === 'shielded' ? pickShieldOp(singleAllowed, rng) : undefined;
+
+  const enemy = makeEnemy(kind, target, now, stage.fallDurationMs, shieldOp);
+
   return {
     ...s,
+    pool,
     enemies: [...s.enemies, enemy],
     spawnedSoFar: s.spawnedSoFar + 1,
     lastSpawnAt: now,
@@ -428,9 +626,10 @@ export interface SubmitResult {
   hit: boolean;
   result: number | null;
   killedEnemyId: string | null;
+  spawnChildren?: Enemy[]; // splitter death → children to spawn
 }
 
-export function submitEquation(s: GameState, now: number): SubmitResult {
+export function submitEquation(s: GameState, now: number, rng: () => number = Math.random): SubmitResult {
   const stage = getStage(s.stageIndex);
   if (!stage) return { state: s, hit: false, result: null, killedEnemyId: null };
 
@@ -441,17 +640,46 @@ export function submitEquation(s: GameState, now: number): SubmitResult {
   const values = variables.map(v => v.value!) as number[];
   const result = evaluate(values, stage.kind);
 
+  // Determine which op was used (for shielded check)
+  const usedOpSlot = s.equation.find(sl => sl.op !== null);
+  const glyphToKind: Record<string, EquationKind> = { '+': 'add', '−': 'sub', '×': 'mul', '÷': 'div' };
+  const usedOp: EquationKind | null = usedOpSlot?.op ? (glyphToKind[usedOpSlot.op] ?? null) : null;
+
   let killedEnemyId: string | null = null;
+  let spawnChildren: Enemy[] | undefined;
   let enemies = s.enemies;
   if (result !== null) {
     const sorted = [...s.enemies].sort((a, b) => a.spawnedAt - b.spawnedAt);
-    const target = sorted.find(e => e.target === result);
+    const target = sorted.find(e => {
+      if (e.target !== result) return false;
+      // Shielded: must use matching op
+      if (e.kind === 'shielded' && e.shieldOp && usedOp !== e.shieldOp) return false;
+      return true;
+    });
     if (target) {
-      killedEnemyId = target.id;
-      enemies = enemies.filter(e => e.id !== target.id);
+      // Tank: damage hp, only kill when hp reaches 0
+      const newHp = target.hp - 1;
+      if (newHp <= 0) {
+        killedEnemyId = target.id;
+        enemies = enemies.filter(e => e.id !== target.id);
+        // Splitter: spawn two child balloon enemies
+        if (target.kind === 'splitter') {
+          const [a, b] = splitTarget(target.target, rng);
+          const now = Date.now();
+          spawnChildren = [
+            makeEnemy('balloon', a, now, stage.fallDurationMs),
+            makeEnemy('balloon', b, now, stage.fallDurationMs),
+          ];
+        }
+        // drop buffer update for balloon/tank is handled below in nextState
+      } else {
+        // Tank took a hit but survived — reduce hp
+        enemies = enemies.map(e => e.id === target.id ? { ...e, hp: newHp } : e);
+      }
     }
   }
   const hit = killedEnemyId !== null;
+  emit({ type: 'problem_attempt', hit, result });
   const attempts = s.attempts + 1;
   const hits = s.hits + (hit ? 1 : 0);
 
@@ -490,9 +718,27 @@ export function submitEquation(s: GameState, now: number): SubmitResult {
     equation = makeEquationSlots(newTier);
   }
 
+  // Update drop buffer when a balloon/tank is killed
+  let dropBuffer = s.dropBuffer;
+  if (killedEnemyId !== null) {
+    const killedEnemy = s.enemies.find(e => e.id === killedEnemyId);
+    if (killedEnemy && (killedEnemy.kind === 'balloon' || killedEnemy.kind === 'tank')) {
+      const cfg = getPoolConfig();
+      dropBuffer = pushToDropBuffer(dropBuffer, killedEnemy.target, {
+        jitter: cfg.jitterEnabled,
+        range: cfg.jitterRange,
+        clampMin: cfg.jitterClampMin,
+        clampMax: cfg.jitterClampMax,
+        cap: cfg.cap,
+        rng,
+      });
+    }
+  }
+
   const nextState: GameState = {
     ...s,
     pool: newPool,
+    dropBuffer,
     equation,
     enemies,
     score,
@@ -503,22 +749,29 @@ export function submitEquation(s: GameState, now: number): SubmitResult {
     combo,
     bestCombo,
   };
-  return { state: nextState, hit, result, killedEnemyId };
+  return { state: nextState, hit, result, killedEnemyId, spawnChildren };
 }
 
 export function refillPool(s: GameState, now: number, rng: () => number = Math.random): GameState {
   const stage = getStage(s.stageIndex);
   if (!stage) return s;
   let changed = false;
+  let dropBuffer = s.dropBuffer;
   const newPool = s.pool.map(p => {
     if (p.refillingUntilMs && p.refillingUntilMs <= now) {
       changed = true;
+      // Use drop buffer first (FIFO), fall back to random
+      const [dropped, remaining] = popFromDropBuffer(dropBuffer);
+      if (dropped !== null) {
+        dropBuffer = remaining;
+        return { id: p.id, number: Math.max(1, Math.min(stage.numberMax, dropped)) };
+      }
       return { id: p.id, number: rand(rng, 1, stage.numberMax) };
     }
     return p;
   });
-  if (!changed) return s;
-  return { ...s, pool: newPool };
+  if (!changed && dropBuffer === s.dropBuffer) return s;
+  return { ...s, pool: newPool, dropBuffer };
 }
 
 export function restartGame(rng: () => number = Math.random): GameState {

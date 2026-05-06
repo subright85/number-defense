@@ -1,0 +1,153 @@
+{
+  "$schema": "ND-balance-v1",
+  "version": "W1.0",
+  "createdBy": "Robin",
+  "createdAt": "2026-05-06T04:25:00Z",
+  "notes": "ND mixed ops W1 balance. Hot-reload 가능. W2 베타 후 telemetry-driven calibration.",
+
+  "ageBuckets": ["7-9", "10-12"],
+  "tiers": [1, 2, 3, 4, 5],
+  "roundToTier": {
+    "rule": "ceil(round / 3)",
+    "examples": {"R1-3": "T1", "R4-6": "T2", "R7-9": "T3", "R10-12": "T4", "R13+": "T5"}
+  },
+
+  "allowedOps": {
+    "7-9": {
+      "T1": ["add"],
+      "T2": ["add", "sub"],
+      "T3": ["add", "sub", "mul"],
+      "T4": ["add", "sub", "mul"],
+      "T5": ["add", "sub", "mul", "mixed2op"]
+    },
+    "10-12": {
+      "T1": ["add", "mul"],
+      "T2": ["add", "sub", "mul"],
+      "T3": ["add", "sub", "mul", "div", "fractionSameDenom"],
+      "T4": ["add", "sub", "mul", "div", "fractionDiffDenom", "decimal", "mixed2op"],
+      "T5": ["add", "sub", "mul", "div", "fractionDiffDenom", "decimal", "mixedMulti", "ratio", "simplify"]
+    }
+  },
+
+  "operandRange": {
+    "7-9": {
+      "T1": {"min": 1, "max": 9, "digits": 1},
+      "T2": {"min": 1, "max": 19, "digits": "1-2", "noCarry": true},
+      "T3": {"min": 1, "max": 99, "digits": "1-2", "carry": true, "mulRange": [2, 5]},
+      "T4": {"min": 1, "max": 99, "carry": true, "mulRange": [6, 9]},
+      "T5": {"min": 1, "max": 99, "mixedTemplate": "a±b×c, ranges 1-9"}
+    },
+    "10-12": {
+      "T1": {"min": 1, "max": 99, "mulSingleDigit": true},
+      "T2": {"min": 1, "max": 999, "mulShape": "1d×2d"},
+      "T3": {"min": 1, "max": 99, "fractionDenom": [2, 3, 4, 5, 6, 8, 10]},
+      "T4": {"min": 1, "max": 99, "decimalRange": [0.1, 9.9]},
+      "T5": {"min": 1, "max": 999, "multiStepDepth": 3}
+    }
+  },
+
+  "pool": {
+    "cap": 12,
+    "minOnScreen": 4,
+    "answerGuarantee": {
+      "rerollMaxN": 3,
+      "rerollStrategy": "regenerateAnswerCandidates",
+      "fallback": {
+        "type": "partialReshuffle",
+        "replaceCount": 8,
+        "preserveCount": 4,
+        "preserveStrategy": "FIFO_oldest_kept_replaced"
+      }
+    },
+    "returnJitter": {
+      "enabled": true,
+      "range": [-1, 1],
+      "clampMin": 1,
+      "clampMax": 9,
+      "applyToOpKinds": ["balloonReturn", "tankReturn"]
+    },
+    "entropyGuard": {
+      "threshold": 2.5,
+      "window": 5,
+      "metric": "shannon_log2_over_1to9",
+      "action": "forcedReshuffle",
+      "telemetryDriven": false,
+      "_calibrationNote": "W1=hardcoded; W2 베타 후 fallback trigger 빈도 0.05-0.15/wave 유지하도록 자동 조정"
+    }
+  },
+
+  "enemyDistribution": {
+    "byRound": {
+      "1":  {"balloon": 1.00},
+      "2":  {"balloon": 1.00},
+      "3":  {"balloon": 1.00},
+      "4":  {"balloon": 0.50, "tank": 0.50},
+      "5":  {"balloon": 0.65, "tank": 0.35},
+      "6":  {"balloon": 0.40, "tank": 0.30, "fast": 0.30},
+      "7":  {"balloon": 0.40, "tank": 0.30, "fast": 0.30},
+      "8":  {"balloon": 0.30, "tank": 0.25, "fast": 0.25, "splitter": 0.20},
+      "9":  {"balloon": 0.30, "tank": 0.25, "fast": 0.25, "splitter": 0.20},
+      "10": {"balloon": 0.25, "tank": 0.25, "fast": 0.20, "splitter": 0.20, "shielded": 0.10},
+      "11": {"balloon": 0.25, "tank": 0.25, "fast": 0.20, "splitter": 0.20, "shielded": 0.10}
+    },
+    "stableFromRound": 12,
+    "stableDistribution": {
+      "balloon": 0.25,
+      "tank": 0.25,
+      "fast": 0.20,
+      "splitter": 0.20,
+      "shielded": 0.10
+    },
+    "_distributionRule": "도입 라운드 30-50% 비중, 다음 라운드부터 점진 normalize, R12+ 고정",
+    "interpolation": "라운드 11 초과 시 stableDistribution 사용"
+  },
+
+  "constraints": {
+    "7-9": {
+      "splitterShieldedCoOccurrenceCapPercent": 30,
+      "_note": "한 wave 안에 Splitter + Shielded 동시 등장 wave 비율 ≤ 30% (frustration 게이트)"
+    },
+    "10-12": {
+      "splitterShieldedCoOccurrenceCapPercent": null
+    },
+    "global": {
+      "maxOperandsPerProblem": 3,
+      "maxAnswerValue": 999,
+      "negativeAnswerAllowed": false
+    }
+  },
+
+  "towers": {
+    "low":  {"damage": 1, "cost": 5},
+    "mid":  {"damage": 2, "cost": 12},
+    "high": {"damage": 3, "cost": 25}
+  },
+
+  "spawn": {
+    "wavePeriodSec": 60,
+    "spawnPerWave": {"T1": 3, "T2": 2, "T3": 2, "T4": 2, "T5": 2}
+  },
+
+  "telemetry": {
+    "events": [
+      "problem_attempt",
+      "pool_reroll",
+      "pool_fallback_triggered",
+      "pool_entropy_sample",
+      "wave_start",
+      "wave_end",
+      "mid_wave_abandon"
+    ],
+    "endpoints": {
+      "distribution": "GET /admin/td/distribution?age=<bucket>&tier=<n>",
+      "poolEntropy": "GET /admin/td/pool-entropy?session_id=<uuid>"
+    }
+  },
+
+  "TBD": [
+    "T5 mixed2op 정답 보증 brute-force 시뮬 (numpy 1만회) — cap 12 충분 검증",
+    "operandRange 분수/소수 정확한 generator 룰 (W1 후반)",
+    "enemy 분포 calibration — Franky spawn rate spec 받은 후 DPM 정합",
+    "10-12세 T5 ratio/simplify 문제 템플릿 정의"
+  ]
+}
