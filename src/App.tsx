@@ -6,7 +6,7 @@ import { useT, type Locale } from './i18n';
 import { Balloon, BALLOON_W, BALLOON_H, balloonVariantFor, PopBurst } from './components/Balloon';
 import { PoolTile } from './components/PoolTile';
 import { BackgroundLayer } from './components/BackgroundLayer';
-import { playPop, playMiss, playLifeLost, playStart, unlockAudio, isMuted, setMuted } from './sfx';
+import { playPop, playMiss, playLifeLost, playStart, playUiTap, playModalOpen, playModalClose, playComboBuild, playComboBreak, playTierUp, playGameoverSting, unlockAudio, isMuted, setMuted } from './sfx';
 import type { EquationKind } from './game/types';
 
 function canDragHit(
@@ -200,6 +200,7 @@ export default function App() {
     if (state.stageIndex !== prevStageIndexRef.current) {
       const newStage = getStage(state.stageIndex);
       if (newStage) {
+        playTierUp();
         const toastId = Date.now();
         setTierToast({ id: toastId, label: newStage.label });
         const t = setTimeout(() => {
@@ -217,9 +218,13 @@ export default function App() {
     const prev = prevComboRef.current;
     const curr = state.combo;
     if (curr > prev && curr >= 3) {
+      if (curr === 3) playComboBuild();
       const id = Date.now();
       setComboFloaters(fs => [...fs, { id, count: curr }]);
       setTimeout(() => setComboFloaters(fs => fs.filter(f => f.id !== id)), 800);
+    }
+    if (prev >= 3 && curr < prev) {
+      playComboBreak();
     }
     if (prev >= 2 && curr < prev) {
       setLaneShaking(true);
@@ -299,10 +304,11 @@ export default function App() {
     }
   }, [state.phase, state.round, showLtrBanner]);
 
-  // Record final score on gameover
+  // Record final score on gameover + play sting
   useEffect(() => {
     if (state.phase !== 'gameover' || recordedHighScoreRef.current) return;
     recordedHighScoreRef.current = true;
+    playGameoverSting();
     const accuracy = state.attempts > 0 ? state.hits / state.attempts : 0;
     const finalScore = Math.round(state.score * accuracy);
     const livePauseElapsed = state.pausedAt > 0 ? Date.now() - state.pausedAt : 0;
@@ -415,7 +421,7 @@ export default function App() {
               <span>{t('menu.start')}</span>
             </button>
             <button
-              onClick={() => setShowLeaderboard(true)}
+              onClick={() => { playUiTap(); playModalOpen(); setShowLeaderboard(true); }}
               style={{ ...secondaryBtn(), width: '100%', fontSize: 13 }}
             >
               🏆 Leaderboard
@@ -427,7 +433,7 @@ export default function App() {
         {showLeaderboard && (
           <LeaderboardModal
             mode={state.mode}
-            onClose={() => setShowLeaderboard(false)}
+            onClose={() => { playModalClose(); setShowLeaderboard(false); }}
           />
         )}
       </div>
@@ -519,7 +525,7 @@ export default function App() {
           </div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 22, flexWrap: 'wrap' }}>
             <button
-              onClick={() => state.isDaily ? startDaily() : startGame()}
+              onClick={() => { unlockAudio(); playUiTap(); playStart(); state.isDaily ? startDaily() : startGame(); }}
               style={primaryBtn(MIXED_COLOR)}
             >
               ↻ Retry
@@ -552,10 +558,10 @@ export default function App() {
             >
               📥 Save card
             </button>
-            <button onClick={() => setShowLeaderboard(true)} style={secondaryBtn()}>
+            <button onClick={() => { playUiTap(); playModalOpen(); setShowLeaderboard(true); }} style={secondaryBtn()}>
               🏆 Leaderboard
             </button>
-            <button onClick={restart} style={secondaryBtn()}>
+            <button onClick={() => { playUiTap(); restart(); }} style={secondaryBtn()}>
               ← Menu
             </button>
           </div>
@@ -563,7 +569,7 @@ export default function App() {
         {showLeaderboard && (
           <LeaderboardModal
             mode={state.mode}
-            onClose={() => setShowLeaderboard(false)}
+            onClose={() => { playModalClose(); setShowLeaderboard(false); }}
           />
         )}
       </div>
@@ -618,7 +624,7 @@ export default function App() {
           {stage.label} · max {stage.numberMax}
         </div>
         <button
-          onClick={togglePause}
+          onClick={() => { playUiTap(); state.phase === 'playing' ? playModalOpen() : playModalClose(); togglePause(); }}
           style={{
             background: 'rgba(255,255,255,0.06)',
             border: '1px solid rgba(255,255,255,0.18)',
@@ -1000,7 +1006,7 @@ export default function App() {
     )}
     {state.phase === 'paused' && (
       <div
-        onClick={togglePause}
+        onClick={() => { playModalClose(); togglePause(); }}
         style={{
           position: 'fixed', inset: 0, zIndex: 250,
           background: 'rgba(2, 4, 18, 0.65)',
@@ -1022,7 +1028,7 @@ export default function App() {
           tap anywhere to resume
         </div>
         <button
-          onClick={(e) => { e.stopPropagation(); restart(); }}
+          onClick={(e) => { e.stopPropagation(); playUiTap(); restart(); }}
           style={{ ...secondaryBtn(), marginTop: 12 }}
         >
           ← Quit to menu
