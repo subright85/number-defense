@@ -667,6 +667,7 @@ export default function App() {
           const xJitter = (hashH % 5) * 22 - 44;
           const left = LANE_WIDTH / 2 - BALLOON_W / 2 + xJitter;
           const danger = progress > 0.7;
+          const shieldGlyph: Record<string, string> = { add: '+', sub: '−', mul: '×', div: '÷' };
           return (
             <div
               key={e.id}
@@ -677,6 +678,32 @@ export default function App() {
               }}
             >
               <Balloon number={e.target} variant={balloonVariantFor(e.id)} danger={danger} />
+              {e.kind === 'shielded' && (
+                <>
+                  <div style={{
+                    position: 'absolute',
+                    inset: -6, borderRadius: '50%',
+                    border: '2px dashed rgba(148,163,184,0.8)',
+                    boxShadow: '0 0 10px rgba(148,163,184,0.45)',
+                    animation: 'shieldSpin 3s linear infinite',
+                    pointerEvents: 'none',
+                  }} />
+                  {e.shieldOp && (
+                    <div style={{
+                      position: 'absolute', top: -5, right: -5,
+                      width: 20, height: 20, borderRadius: '50%',
+                      background: 'rgba(15,23,42,0.95)',
+                      border: '1.5px solid rgba(148,163,184,0.85)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 11, fontWeight: 900, color: '#94a3b8',
+                      fontFamily: "'JetBrains Mono', monospace",
+                      pointerEvents: 'none', zIndex: 2,
+                    }}>
+                      {shieldGlyph[e.shieldOp] ?? '?'}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           );
         })}
