@@ -21,9 +21,17 @@ export interface FlashEvent {
 
 let flashCounter = 0;
 
+export interface SplitAnim {
+  id: string;
+  progress: number;
+  ts: number;
+}
+
 export function useGameLoop() {
   const [state, setState] = useState<GameState>(() => createInitialState());
   const [flashes, setFlashes] = useState<FlashEvent[]>([]);
+  const [tankHits, setTankHits] = useState<ReadonlySet<string>>(new Set());
+  const [splitAnims, setSplitAnims] = useState<SplitAnim[]>([]);
   const rngRef = useRef<() => number>(Math.random);
 
   const startGame = useCallback((mode: EquationKind = 'add') => {
@@ -132,6 +140,20 @@ export function useGameLoop() {
         };
         setFlashes(prev => [...prev, flash]);
       }
+      if (result.damagedEnemyId) {
+        const id = result.damagedEnemyId;
+        setTankHits(prev => new Set([...prev, id]));
+        setTimeout(() => setTankHits(prev => { const s = new Set(prev); s.delete(id); return s; }), 160);
+      }
+      if (result.killedEnemyId) {
+        const killed = s.enemies.find(e => e.id === result.killedEnemyId);
+        if (killed?.kind === 'splitter') {
+          const progress = Math.min(1, (Date.now() - killed.spawnedAt) / killed.fallDurationMs);
+          const animId = `sp${++flashCounter}`;
+          setSplitAnims(prev => [...prev, { id: animId, progress, ts: Date.now() }]);
+          setTimeout(() => setSplitAnims(prev => prev.filter(a => a.id !== animId)), 400);
+        }
+      }
       const nextState = result.spawnChildren?.length
         ? { ...result.state, enemies: [...result.state.enemies, ...result.spawnChildren] }
         : result.state;
@@ -148,5 +170,5 @@ export function useGameLoop() {
     return () => clearTimeout(id);
   }, [flashes]);
 
-  return { state, flashes, startGame, startDaily, restart, togglePause, tap, drop, untap, clear, submit };
+  return { state, flashes, tankHits, splitAnims, startGame, startDaily, restart, togglePause, tap, drop, untap, clear, submit };
 }

@@ -101,7 +101,7 @@ const MODE_META: Record<EquationKind, { color: string; label: string; glyph: str
 export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [now, setNow] = useState(Date.now());
-  const { state, flashes, startGame, startDaily, restart, togglePause, tap, drop, untap, submit, clear } = useGameLoop();
+  const { state, flashes, tankHits, splitAnims, startGame, startDaily, restart, togglePause, tap, drop, untap, submit, clear } = useGameLoop();
   const recentlyKilledRef = useRef<Map<string, number>>(new Map());
   const { locale, toggleLocale, t } = useT();
   const recordedHighScoreRef = useRef(false);
@@ -668,6 +668,7 @@ export default function App() {
           const left = LANE_WIDTH / 2 - BALLOON_W / 2 + xJitter;
           const danger = progress > 0.7;
           const shieldGlyph: Record<string, string> = { add: '+', sub: '−', mul: '×', div: '÷' };
+          const isTankHit = e.kind === 'tank' && tankHits.has(e.id);
           return (
             <div
               key={e.id}
@@ -675,9 +676,39 @@ export default function App() {
                 position: 'absolute', left, top,
                 width: BALLOON_W, height: BALLOON_H,
                 transition: 'top 80ms linear',
+                transform: e.kind === 'tank' ? 'scale(1.2)' : e.kind === 'fast' ? 'scale(0.9)' : undefined,
+                transformOrigin: 'center',
+                animation: isTankHit ? 'tankHitShake 0.14s ease-out' : undefined,
               }}
             >
+              {e.kind === 'fast' && [0, 1, 2].map(i => (
+                <div key={i} style={{
+                  position: 'absolute', inset: 0, borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.12)',
+                  filter: 'blur(3px)',
+                  transform: `translateY(${-(i + 1) * 7}px) scale(${1 - (i + 1) * 0.1})`,
+                  opacity: 0.4 - i * 0.12,
+                  pointerEvents: 'none',
+                }} />
+              ))}
               <Balloon number={e.target} variant={balloonVariantFor(e.id)} danger={danger} />
+              {e.kind === 'tank' && (
+                <div style={{
+                  position: 'absolute', inset: -4, borderRadius: 16,
+                  border: isTankHit ? '3px solid rgba(239,68,68,0.9)' : '3px solid rgba(15,23,42,0.75)',
+                  boxShadow: isTankHit ? '0 0 14px rgba(239,68,68,0.55)' : '0 0 6px rgba(0,0,0,0.45)',
+                  transition: 'border-color 0.06s, box-shadow 0.06s',
+                  pointerEvents: 'none',
+                }} />
+              )}
+              {e.kind === 'splitter' && (
+                <div style={{
+                  position: 'absolute', inset: -5, borderRadius: 18,
+                  border: '2px dashed rgba(250,204,21,0.75)',
+                  boxShadow: '0 0 8px rgba(250,204,21,0.3)',
+                  pointerEvents: 'none',
+                }} />
+              )}
               {e.kind === 'shielded' && (
                 <>
                   <div style={{
@@ -704,6 +735,26 @@ export default function App() {
                   )}
                 </>
               )}
+            </div>
+          );
+        })}
+
+        {/* Splitter death — two ghost balloons fly apart */}
+        {splitAnims.map(a => {
+          const splitTop = a.progress * (LANE_HEIGHT - BALLOON_H - 4);
+          const splitLeft = LANE_WIDTH / 2 - BALLOON_W / 2;
+          return (
+            <div key={a.id} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+              {(['splitFlyLeft', 'splitFlyRight'] as const).map(anim => (
+                <div key={anim} style={{
+                  position: 'absolute', left: splitLeft, top: splitTop,
+                  width: BALLOON_W, height: BALLOON_H,
+                  animation: `${anim} 0.35s ease-out forwards`,
+                  opacity: 0.75,
+                }}>
+                  <Balloon number={0} variant={3} />
+                </div>
+              ))}
             </div>
           );
         })}

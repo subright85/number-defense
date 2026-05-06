@@ -629,6 +629,7 @@ export interface SubmitResult {
   result: number | null;
   killedEnemyId: string | null;
   spawnChildren?: Enemy[]; // splitter death → children to spawn
+  damagedEnemyId?: string; // tank took hit but survived
 }
 
 export function submitEquation(s: GameState, now: number, rng: () => number = Math.random): SubmitResult {
@@ -649,6 +650,7 @@ export function submitEquation(s: GameState, now: number, rng: () => number = Ma
 
   let killedEnemyId: string | null = null;
   let spawnChildren: Enemy[] | undefined;
+  let damagedEnemyId: string | undefined;
   let enemies = s.enemies;
   if (result !== null) {
     const sorted = [...s.enemies].sort((a, b) => a.spawnedAt - b.spawnedAt);
@@ -677,6 +679,7 @@ export function submitEquation(s: GameState, now: number, rng: () => number = Ma
       } else {
         // Tank took a hit but survived — reduce hp
         enemies = enemies.map(e => e.id === target.id ? { ...e, hp: newHp } : e);
+        damagedEnemyId = target.id;
       }
     }
   }
@@ -751,7 +754,7 @@ export function submitEquation(s: GameState, now: number, rng: () => number = Ma
     combo,
     bestCombo,
   };
-  return { state: nextState, hit, result, killedEnemyId, spawnChildren };
+  return { state: nextState, hit, result, killedEnemyId, spawnChildren, damagedEnemyId };
 }
 
 export function refillPool(s: GameState, now: number, rng: () => number = Math.random): GameState {
