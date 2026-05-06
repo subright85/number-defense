@@ -42,6 +42,21 @@ const EN = {
   'help.line2': 'Tap an equation slot to remove that number.',
 
   'tagline': 'Math · Pop · Defend',
+
+  'onboarding.tip': '👋 Tap or drag a number tile up into the equation. Match the result to a falling balloon.',
+  'onboarding.gotIt': 'got it',
+
+  'pause.title': '⏸ Paused',
+  'pause.resume': 'tap anywhere to resume',
+  'pause.quit': '← Quit to menu',
+
+  'game.retry': '↻ Retry',
+  'game.leaderboard': '🏆 Leaderboard',
+  'game.menuBack': '← Menu',
+
+  'ltr.heading': 'Equations solve left to right!',
+  'ltr.body': 'e.g. 3 + 2 × 4 → 5 × 4 → 20',
+  'ltr.note': '(no PEMDAS — left to right only)',
 };
 
 const KO: typeof EN = {
@@ -84,6 +99,21 @@ const KO: typeof EN = {
   'help.line2': '식 슬롯을 다시 탭하면 그 숫자가 빠져요.',
 
   'tagline': 'Math · Pop · Defend',
+
+  'onboarding.tip': '👋 숫자 타일을 탭하거나 식 위로 드래그해서 넣으세요. 결과가 떨어지는 풍선과 맞으면 풍선이 터져요.',
+  'onboarding.gotIt': '알겠어요',
+
+  'pause.title': '⏸ 일시 정지',
+  'pause.resume': '아무 곳이나 탭해서 재개',
+  'pause.quit': '← 메뉴로',
+
+  'game.retry': '↻ 다시 하기',
+  'game.leaderboard': '🏆 리더보드',
+  'game.menuBack': '← 메뉴',
+
+  'ltr.heading': '수식은 왼쪽부터 순서대로 풀어요!',
+  'ltr.body': '예: 3 + 2 × 4 → 5 × 4 → 20',
+  'ltr.note': '(× ÷ 먼저 X, 학교에서 배운 순서랑 달라요)',
 };
 
 const DICTS: Record<Locale, typeof EN> = { en: EN, ko: KO };

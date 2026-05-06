@@ -528,7 +528,7 @@ export default function App() {
               onClick={() => { unlockAudio(); playUiTap(); playStart(); state.isDaily ? startDaily() : startGame(); }}
               style={primaryBtn(MIXED_COLOR)}
             >
-              ↻ Retry
+              {t('game.retry')}
             </button>
             <button
               onClick={() => shareScore({
@@ -559,10 +559,10 @@ export default function App() {
               📥 Save card
             </button>
             <button onClick={() => { playUiTap(); playModalOpen(); setShowLeaderboard(true); }} style={secondaryBtn()}>
-              🏆 Leaderboard
+              {t('game.leaderboard')}
             </button>
             <button onClick={() => { playUiTap(); restart(); }} style={secondaryBtn()}>
-              ← Menu
+              {t('game.menuBack')}
             </button>
           </div>
         </div>
@@ -641,7 +641,11 @@ export default function App() {
       </div>
 
       {showLtrBanner && (
-        <LtrBanner onClose={() => {
+        <LtrBanner
+          heading={t('ltr.heading')}
+          body={t('ltr.body')}
+          note={t('ltr.note')}
+          onClose={() => {
           localStorage.setItem('nd:tutorial:leftToRight', '1');
           setShowLtrBanner(false);
         }} />
@@ -985,7 +989,7 @@ export default function App() {
           border: '1px solid rgba(255,255,255,0.18)',
         }}
       >
-        👋 Tap or drag a number tile up into the equation. Match the result to a falling balloon.
+        {t('onboarding.tip')}
         <button
           onClick={() => {
             setShowOnboarding(false);
@@ -1000,7 +1004,7 @@ export default function App() {
             minHeight: 44,
           }}
         >
-          got it
+          {t('onboarding.gotIt')}
         </button>
       </div>
     )}
@@ -1022,16 +1026,16 @@ export default function App() {
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
         }}>
-          ⏸ Paused
+          {t('pause.title')}
         </div>
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)' }}>
-          tap anywhere to resume
+          {t('pause.resume')}
         </div>
         <button
           onClick={(e) => { e.stopPropagation(); playUiTap(); restart(); }}
           style={{ ...secondaryBtn(), marginTop: 12 }}
         >
-          ← Quit to menu
+          {t('pause.quit')}
         </button>
       </div>
     )}
@@ -1658,7 +1662,7 @@ function HeroBlock({ taglineLabel }: { taglineLabel: string }) {
   );
 }
 
-function LtrBanner({ onClose }: { onClose: () => void }) {
+function LtrBanner({ heading, body, note, onClose }: { heading: string; body: string; note: string; onClose: () => void }) {
   const [fading, setFading] = useState(false);
 
   useEffect(() => {
@@ -1682,9 +1686,9 @@ function LtrBanner({ onClose }: { onClose: () => void }) {
     }}>
       <span style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }}>🧮</span>
       <div style={{ flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.95)', lineHeight: 1.5 }}>
-        <div style={{ fontWeight: 800, marginBottom: 2 }}>수식은 왼쪽부터 순서대로 풀어요!</div>
-        <div>예: 3 + 2 × 4 → 5 × 4 → 20</div>
-        <div style={{ opacity: 0.75, fontSize: 11, marginTop: 2 }}>(× ÷ 먼저 X, 학교에서 배운 순서랑 달라요)</div>
+        <div style={{ fontWeight: 800, marginBottom: 2 }}>{heading}</div>
+        <div>{body}</div>
+        <div style={{ opacity: 0.75, fontSize: 11, marginTop: 2 }}>{note}</div>
       </div>
       <button
         onClick={() => { setFading(true); setTimeout(onClose, 700); }}
