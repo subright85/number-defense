@@ -9,6 +9,24 @@ import { BackgroundLayer } from './components/BackgroundLayer';
 import { playPop, playMiss, playLifeLost, playStart, unlockAudio, isMuted, setMuted } from './sfx';
 import type { EquationKind } from './game/types';
 
+function canDragHit(
+  dragNum: number,
+  equation: { op: string | null; value: number | null }[],
+  enemies: { value: number }[],
+  mode: EquationKind
+): boolean {
+  const vars = equation.filter(s => s.op === null);
+  const enemyVals = new Set(enemies.map(e => e.value));
+  for (let i = 0; i < vars.length; i++) {
+    if (vars[i].value !== null) continue;
+    const testVals = vars.map((v, j) => (j === i ? dragNum : v.value));
+    if (testVals.some(v => v === null)) continue;
+    const result = evaluate(testVals as number[], mode);
+    if (result !== null && enemyVals.has(result)) return true;
+  }
+  return false;
+}
+
 function useCountUp(target: number, durationMs = 700): number {
   const [display, setDisplay] = useState(0);
   useEffect(() => {
@@ -920,27 +938,36 @@ export default function App() {
         </button>
       </div>
     )}
-    {drag && drag.moved && (
-      <div
-        style={{
-          position: 'fixed',
-          left: drag.x - 30, top: drag.y - 30,
-          width: 60, height: 60,
-          borderRadius: 14,
-          background: 'linear-gradient(150deg, #fef3c7 0%, #fbbf24 100%)',
-          border: '2px solid #d97706',
-          boxShadow: '0 8px 22px rgba(217,119,6,0.7)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 22, fontWeight: 900, color: '#1f2937',
-          fontFamily: "'JetBrains Mono', monospace",
-          zIndex: 300,
-          pointerEvents: 'none',
-          transform: 'scale(1.08)',
-        }}
-      >
-        {drag.number}
-      </div>
-    )}
+    {drag && drag.moved && (() => {
+      const hint = canDragHit(drag.number, state.equation, state.enemies, state.mode);
+      return (
+        <div
+          style={{
+            position: 'fixed',
+            left: drag.x - 30, top: drag.y - 30,
+            width: 60, height: 60,
+            borderRadius: 14,
+            background: hint
+              ? 'linear-gradient(150deg, #d1fae5 0%, #34d399 100%)'
+              : 'linear-gradient(150deg, #fef3c7 0%, #fbbf24 100%)',
+            border: hint ? '2px solid #059669' : '2px solid #d97706',
+            boxShadow: hint
+              ? '0 8px 22px rgba(52,211,153,0.75), 0 0 0 3px rgba(52,211,153,0.25)'
+              : '0 8px 22px rgba(217,119,6,0.7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 22, fontWeight: 900,
+            color: hint ? '#064e3b' : '#1f2937',
+            fontFamily: "'JetBrains Mono', monospace",
+            zIndex: 300,
+            pointerEvents: 'none',
+            transform: 'scale(1.08)',
+            transition: 'background 0.15s, border 0.15s, box-shadow 0.15s',
+          }}
+        >
+          {drag.number}
+        </div>
+      );
+    })()}
     </>
   );
 }
