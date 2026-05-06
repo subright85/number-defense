@@ -13,3 +13,11 @@
 ## Tower sprites (`tower_t*.png`) — v1 only, not used in v3
 - **Source**: Kenney Tower Defense (Top-Down) — https://kenney.nl/assets/tower-defense-top-down
 - **License**: CC0 Public Domain
+
+## Moon sprite (`moon.png`)
+- **Source**: Kenney Planets Pack — https://kenney.nl/assets/planets (sphere0.png, resized 1024→128px)
+- **License**: CC0 Public Domain
+
+## Cloud sprites (`cloud1.png`, `cloud2.png`, `cloud3.png`)
+- **Source**: Kenney Platformer Art Deluxe — https://kenney.nl/assets/platformer-art-deluxe
+- **License**: CC0 Public Domain

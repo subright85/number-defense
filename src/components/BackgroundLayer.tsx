@@ -1,5 +1,19 @@
 // Decorative animated background — moon glow, layered clouds, twinkling stars.
-// Pure SVG/CSS, fixed-position, behind everything (z-index 0).
+// Fixed-position, behind everything (z-index 0).
+// Moon + cloud sprites: kenney.nl Planets Pack + Platformer Art Deluxe (CC0).
+
+const CLOUD_SRC: Record<number, string> = {
+  1: '/sprites/cloud1.png',
+  2: '/sprites/cloud2.png',
+  3: '/sprites/cloud3.png',
+};
+
+// layer 1 → wispy/small, layer 2 → medium, layer 3 → large puffy
+const CLOUD_SIZE: Record<number, { w: number; h: number }> = {
+  1: { w: 130, h: 40 },
+  2: { w: 140, h: 55 },
+  3: { w: 170, h: 65 },
+};
 
 const CLOUDS: Array<{
   left: string; top: string;
@@ -30,38 +44,17 @@ const STARS = Array.from({ length: 36 }, (_, i) => {
   };
 });
 
-function CloudSvg({ opacity, layer }: { opacity: number; layer: number }) {
-  // Layer 1: thin wispy, Layer 2: medium fluffy, Layer 3: big puffy
-  if (layer === 1) {
-    return (
-      <svg width={130} height={40} viewBox="0 0 130 40" style={{ display: 'block' }}>
-        <ellipse cx={65} cy={28} rx={60} ry={10} fill={`rgba(180,210,250,${opacity})`} />
-        <ellipse cx={50} cy={22} rx={32} ry={14} fill={`rgba(190,215,255,${opacity + 0.03})`} />
-        <ellipse cx={82} cy={24} rx={24} ry={12} fill={`rgba(185,210,250,${opacity + 0.02})`} />
-      </svg>
-    );
-  }
-  if (layer === 2) {
-    return (
-      <svg width={140} height={55} viewBox="0 0 140 55" style={{ display: 'block' }}>
-        <ellipse cx={70} cy={40} rx={65} ry={13} fill={`rgba(175,205,245,${opacity})`} />
-        <ellipse cx={48} cy={30} rx={36} ry={20} fill={`rgba(185,212,250,${opacity + 0.04})`} />
-        <ellipse cx={82} cy={26} rx={30} ry={22} fill={`rgba(192,218,255,${opacity + 0.06})`} />
-        <ellipse cx={108} cy={34} rx={26} ry={16} fill={`rgba(180,208,248,${opacity + 0.02})`} />
-        <ellipse cx={65} cy={22} rx={20} ry={16} fill={`rgba(200,222,255,${opacity + 0.08})`} />
-      </svg>
-    );
-  }
-  // layer 3 — large puffy
+function CloudImg({ opacity, layer }: { opacity: number; layer: number }) {
+  const { w, h } = CLOUD_SIZE[layer];
   return (
-    <svg width={170} height={65} viewBox="0 0 170 65" style={{ display: 'block' }}>
-      <ellipse cx={85} cy={52} rx={80} ry={14} fill={`rgba(170,200,245,${opacity})`} />
-      <ellipse cx={55} cy={38} rx={42} ry={26} fill={`rgba(182,210,250,${opacity + 0.04})`} />
-      <ellipse cx={95} cy={32} rx={38} ry={28} fill={`rgba(190,216,255,${opacity + 0.07})`} />
-      <ellipse cx={132} cy={42} rx={30} ry={20} fill={`rgba(178,206,248,${opacity + 0.02})`} />
-      <ellipse cx={75} cy={24} rx={26} ry={20} fill={`rgba(200,224,255,${opacity + 0.10})`} />
-      <ellipse cx={108} cy={26} rx={22} ry={18} fill={`rgba(205,226,255,${opacity + 0.09})`} />
-    </svg>
+    <img
+      src={CLOUD_SRC[layer]}
+      width={w}
+      height={h}
+      alt=""
+      draggable={false}
+      style={{ display: 'block', opacity }}
+    />
   );
 }
 
@@ -77,7 +70,7 @@ export function BackgroundLayer() {
       {/* Moon — top-right, soft glow */}
       <div style={{
         position: 'absolute', top: 28, right: 36,
-        width: 52, height: 52,
+        width: 64, height: 64,
       }}>
         {/* Glow halo */}
         <div style={{
@@ -87,26 +80,14 @@ export function BackgroundLayer() {
           background: 'radial-gradient(circle, rgba(200,220,255,0.18) 0%, rgba(160,190,255,0.08) 50%, transparent 70%)',
           animation: 'moonGlow 4s ease-in-out infinite',
         }} />
-        {/* Moon body */}
-        <svg width={52} height={52} viewBox="0 0 52 52" style={{ position: 'relative' }}>
-          <defs>
-            <radialGradient id="moonGrad" cx="40%" cy="35%" r="60%">
-              <stop offset="0%" stopColor="#e8f0ff" />
-              <stop offset="60%" stopColor="#c8d8f8" />
-              <stop offset="100%" stopColor="#a8b8e8" />
-            </radialGradient>
-            <mask id="moonMask">
-              <circle cx="26" cy="26" r="22" fill="white" />
-              <circle cx="36" cy="18" r="17" fill="black" />
-            </mask>
-          </defs>
-          {/* Crescent shape via mask */}
-          <circle cx="26" cy="26" r="22" fill="url(#moonGrad)" mask="url(#moonMask)" />
-          {/* Subtle craters */}
-          <circle cx="18" cy="30" r="3.5" fill="rgba(160,180,230,0.4)" mask="url(#moonMask)" />
-          <circle cx="28" cy="38" r="2.5" fill="rgba(160,180,230,0.3)" mask="url(#moonMask)" />
-          <circle cx="12" cy="20" r="2" fill="rgba(160,180,230,0.3)" mask="url(#moonMask)" />
-        </svg>
+        <img
+          src="/sprites/moon.png"
+          width={64}
+          height={64}
+          alt=""
+          draggable={false}
+          style={{ position: 'relative', display: 'block' }}
+        />
       </div>
 
       {/* Stars */}
@@ -139,7 +120,7 @@ export function BackgroundLayer() {
             filter: 'drop-shadow(0 3px 8px rgba(100,130,200,0.15))',
           }}
         >
-          <CloudSvg opacity={c.opacity} layer={c.layer} />
+          <CloudImg opacity={c.opacity} layer={c.layer} />
         </div>
       ))}
     </div>
