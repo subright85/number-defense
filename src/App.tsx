@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { loadBalance, getStage, getHighScore, getLeaderboard, recordScore, getDailyBest, recordDaily, dailyKindForDate, dateKey, getNickname, setNickname } from './game/engine';
+import { loadBalance, getStage, getHighScore, getLeaderboard, recordScore, getDailyBest, recordDaily, dailyKindForDate, dateKey, getNickname, setNickname, evaluate } from './game/engine';
 import type { LeaderboardEntry } from './game/engine';
 import { useGameLoop } from './game/useGameLoop';
 import { useT, type Locale } from './i18n';
@@ -660,7 +660,27 @@ export default function App() {
           );
         })}
         <span style={{ fontSize: 22, fontWeight: 800, color: 'rgba(255,255,255,0.7)' }}>=</span>
-        <span style={{ fontSize: 22, fontWeight: 800, color: '#fbbf24', fontFamily: "'JetBrains Mono', monospace" }}>?</span>
+        {(() => {
+          const filledValues = state.equation.filter(s => s.value !== null).map(s => s.value as number);
+          const allFilled = state.equation.length > 0 && state.equation.every(s => s.op !== null || s.value !== null);
+          if (filledValues.length === 0) {
+            return <span style={{ fontSize: 22, fontWeight: 800, color: 'rgba(255,255,255,0.3)', fontFamily: "'JetBrains Mono', monospace" }}>?</span>;
+          }
+          const liveVal = evaluate(filledValues, state.mode);
+          const matchesEnemy = liveVal !== null && state.enemies.some(e => e.target === liveVal);
+          const color = allFilled ? (matchesEnemy ? '#34d399' : '#ef4444') : '#fbbf24';
+          return (
+            <span style={{
+              fontSize: 22, fontWeight: 800,
+              color,
+              fontFamily: "'JetBrains Mono', monospace",
+              transition: 'color 120ms',
+              textShadow: allFilled && matchesEnemy ? '0 0 10px rgba(52,211,153,0.7)' : 'none',
+            }}>
+              {liveVal ?? '?'}
+            </span>
+          );
+        })()}
       </div>
 
       <div style={{ display: 'flex', gap: 8 }}>
