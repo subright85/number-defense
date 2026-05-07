@@ -228,8 +228,9 @@ export function makeEquationSlots(stage: Stage): EquationSlot[] {
 export function makeFreshPool(stage: Stage | null, rng: () => number): PoolEntry[] {
   if (!stage) return [];
   const bal = getBalance();
+  const size = stage.poolCap ?? bal.poolSize;
   const arr: PoolEntry[] = [];
-  for (let i = 0; i < bal.poolSize; i++) {
+  for (let i = 0; i < size; i++) {
     arr.push({
       id: nextId('p'),
       number: rand(rng, 1, stage.numberMax),
@@ -468,6 +469,18 @@ export function endWave(s: GameState, rng: () => number = Math.random): GameStat
 
   // Advance to next tier if killedSoFar unlocks it
   const newTier = pickTierForMode(s.mode, s.killedSoFar, s.ageBracket);
+
+  // If tier changed AND pool size differs, regenerate pool with new size+max
+  if (newTier.index !== s.stageIndex) {
+    const oldSize = pool.length;
+    const newSize = newTier.poolCap ?? getBalance().poolSize;
+    if (newSize !== oldSize) {
+      pool = makeFreshPool(newTier, rng);
+    } else {
+      // Same pool size — refresh numbers only with new numberMax range
+      pool = pool.map(p => ({ ...p, number: rand(rng, 1, newTier.numberMax) }));
+    }
+  }
 
   emit({ type: 'wave_start', round: nextRound });
 

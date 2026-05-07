@@ -94,6 +94,7 @@ export function buildStagesFromW1(w1: W1Json): Stage[] {
         spawnIntervalMs,
         spawnPerWave,
         fallDurationMs,
+        poolCap: cfg?.poolCap,
         label: `${bracket} · Tier ${tier}`,
       });
     }

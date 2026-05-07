@@ -1,10 +1,10 @@
 {
   "$schema": "ND-balance-v1",
-  "version": "W1.2",
+  "version": "W1.3",
   "createdBy": "Robin",
   "createdAt": "2026-05-06T04:25:00Z",
   "updatedAt": "2026-05-07T06:05:00Z",
-  "notes": "ND mixed ops W1.2 — gradient ramp pass: max grows +20-50% per tier (이전 +80~+421% 점프 제거), 5-6 kindergarten T1-T3 한참 10 밑 (max 5/7/10), 신규 op 도입 시 numberMax 동결/낮춤 룰 적용, pool cap 4-10 ramp. 사용자 신고 '들쭉날쭉 + 풀 너무 큼' 처방.",
+  "notes": "ND mixed ops W1.3 — tier dwell-time 늘림 (15/35/60/90 unlock = T1 15 kills, T2-T3 20-25 kills, T4-T5 30 kills 머무름, 이전 6/15/27/42에서 2-3배 늘림), pool cap 3-8 더 작게 (이전 4-10 → 5-6 T1-T2 = 3, 7-9 T1-T2 = 4). 사용자 신고 '스테이지 너무 빨리 바뀜 + 풀 여전히 큼' 처방.",
 
   "ageBuckets": ["5-6", "7-9", "10-12"],
   "tiers": [1, 2, 3, 4, 5],
@@ -62,27 +62,27 @@
   },
 
   "tierConfig": {
-    "_comment": "Per-bracket per-tier. Pool cap 4-10 ramp (이전 6-12 → 더 작게). spawn ramp UP with tier (역전 X). 신규 op 도입 tier에서는 max 동결/낮춤.",
+    "_comment": "Per-bracket per-tier. v3 — unlock 임계 대폭 늘림 (한 tier 15-30 kills 머무름), pool cap 3-8 더 작게.",
     "5-6": {
-      "T1": {"unlockAt": 0,  "spawnPerWave": 1, "fallDurationMs": 25000, "variableCount": 2, "poolCap": 4},
-      "T2": {"unlockAt": 6,  "spawnPerWave": 1, "fallDurationMs": 22000, "variableCount": 2, "poolCap": 4},
-      "T3": {"unlockAt": 15, "spawnPerWave": 1, "fallDurationMs": 22000, "variableCount": 2, "poolCap": 5},
-      "T4": {"unlockAt": 27, "spawnPerWave": 2, "fallDurationMs": 20000, "variableCount": 2, "poolCap": 5},
-      "T5": {"unlockAt": 42, "spawnPerWave": 2, "fallDurationMs": 18000, "variableCount": 2, "poolCap": 6}
+      "T1": {"unlockAt": 0,  "spawnPerWave": 1, "fallDurationMs": 25000, "variableCount": 2, "poolCap": 3},
+      "T2": {"unlockAt": 15, "spawnPerWave": 1, "fallDurationMs": 22000, "variableCount": 2, "poolCap": 3},
+      "T3": {"unlockAt": 35, "spawnPerWave": 1, "fallDurationMs": 22000, "variableCount": 2, "poolCap": 4},
+      "T4": {"unlockAt": 60, "spawnPerWave": 2, "fallDurationMs": 20000, "variableCount": 2, "poolCap": 4},
+      "T5": {"unlockAt": 90, "spawnPerWave": 2, "fallDurationMs": 18000, "variableCount": 2, "poolCap": 5}
     },
     "7-9": {
-      "T1": {"unlockAt": 0,  "spawnPerWave": 2, "fallDurationMs": 20000, "variableCount": 2, "poolCap": 5},
-      "T2": {"unlockAt": 15, "spawnPerWave": 2, "fallDurationMs": 18000, "variableCount": 2, "poolCap": 6},
-      "T3": {"unlockAt": 30, "spawnPerWave": 2, "fallDurationMs": 16000, "variableCount": 2, "poolCap": 7},
-      "T4": {"unlockAt": 45, "spawnPerWave": 3, "fallDurationMs": 14000, "variableCount": 2, "poolCap": 8},
-      "T5": {"unlockAt": 60, "spawnPerWave": 3, "fallDurationMs": 13000, "variableCount": 2, "poolCap": 9}
+      "T1": {"unlockAt": 0,  "spawnPerWave": 2, "fallDurationMs": 20000, "variableCount": 2, "poolCap": 4},
+      "T2": {"unlockAt": 15, "spawnPerWave": 2, "fallDurationMs": 18000, "variableCount": 2, "poolCap": 4},
+      "T3": {"unlockAt": 35, "spawnPerWave": 2, "fallDurationMs": 16000, "variableCount": 2, "poolCap": 5},
+      "T4": {"unlockAt": 60, "spawnPerWave": 3, "fallDurationMs": 14000, "variableCount": 2, "poolCap": 6},
+      "T5": {"unlockAt": 90, "spawnPerWave": 3, "fallDurationMs": 13000, "variableCount": 2, "poolCap": 7}
     },
     "10-12": {
-      "T1": {"unlockAt": 0,  "spawnPerWave": 3, "fallDurationMs": 16000, "variableCount": 2, "poolCap": 6},
-      "T2": {"unlockAt": 12, "spawnPerWave": 3, "fallDurationMs": 15000, "variableCount": 2, "poolCap": 7},
-      "T3": {"unlockAt": 24, "spawnPerWave": 3, "fallDurationMs": 14000, "variableCount": 2, "poolCap": 8},
-      "T4": {"unlockAt": 36, "spawnPerWave": 3, "fallDurationMs": 13000, "variableCount": 3, "poolCap": 9},
-      "T5": {"unlockAt": 48, "spawnPerWave": 3, "fallDurationMs": 12000, "variableCount": 3, "poolCap": 10}
+      "T1": {"unlockAt": 0,  "spawnPerWave": 3, "fallDurationMs": 16000, "variableCount": 2, "poolCap": 5},
+      "T2": {"unlockAt": 15, "spawnPerWave": 3, "fallDurationMs": 15000, "variableCount": 2, "poolCap": 5},
+      "T3": {"unlockAt": 35, "spawnPerWave": 3, "fallDurationMs": 14000, "variableCount": 2, "poolCap": 6},
+      "T4": {"unlockAt": 60, "spawnPerWave": 3, "fallDurationMs": 13000, "variableCount": 3, "poolCap": 7},
+      "T5": {"unlockAt": 90, "spawnPerWave": 3, "fallDurationMs": 12000, "variableCount": 3, "poolCap": 8}
     }
   },
 

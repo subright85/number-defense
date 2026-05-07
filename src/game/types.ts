@@ -24,6 +24,7 @@ export interface Stage {
   spawnIntervalMs: number;
   spawnPerWave: number;
   fallDurationMs: number;
+  poolCap?: number;             // per-tier pool size (overrides global poolSize)
   label: string;
 }
 
