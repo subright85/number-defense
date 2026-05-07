@@ -88,7 +88,8 @@ const HudIcons = {
 const LANE_HEIGHT = 460;
 const LANE_WIDTH  = 320;
 
-const MIXED_COLOR = '#FFD93D';
+const ND_PRIMARY_HEX = '#FFD93D';
+const MIXED_COLOR = 'var(--nd-primary)';
 const MIXED_GLYPH = '∞';
 
 const MODE_META: Record<EquationKind, { color: string; label: string; glyph: string }> = {
@@ -380,6 +381,10 @@ export default function App() {
         <div style={{
           maxWidth: 420, width: '100%', padding: '32px 20px 24px',
           display: 'flex', flexDirection: 'column', gap: 16,
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.01) 100%)',
+          borderRadius: 24,
+          boxShadow: '0 8px 48px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07)',
+          border: '1px solid rgba(255,255,255,0.07)',
         }}>
           <HeroBlock taglineLabel={t('tagline')} />
 
@@ -391,9 +396,10 @@ export default function App() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8, marginTop: 6,
             color: 'rgba(255,255,255,0.55)', fontSize: 12, lineHeight: 1.5,
-            background: 'rgba(255,255,255,0.025)',
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01))',
+            border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: 12, padding: '10px 12px',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.07)',
           }}>
             <span style={{ fontSize: 18 }}>🎈</span>
             <span>
@@ -412,7 +418,7 @@ export default function App() {
                 padding: '18px 24px',
                 fontSize: 18,
                 borderRadius: 16,
-                boxShadow: `0 6px 24px ${MIXED_COLOR}55, inset 0 1px 0 rgba(255,255,255,0.18)`,
+                boxShadow: '0 6px 24px rgba(255,217,61,0.33), inset 0 1px 0 rgba(255,255,255,0.18)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               }}
               className="nd-btn"
@@ -428,7 +434,6 @@ export default function App() {
             </button>
           </div>
 
-          <DonationFooter />
         </div>
         {showLeaderboard && (
           <LeaderboardModal
@@ -471,12 +476,19 @@ export default function App() {
             <div>{t('over.killedPassed')}: <b>{state.killedSoFar}</b> · <b>{state.reachedBaseSoFar}</b></div>
             <div>{t('over.accuracy')}: <b>{accuracy}%</b> ({state.hits}/{state.attempts})</div>
             <div>🔥 Best combo: <b>×{state.bestCombo}</b></div>
-            <div style={{ marginTop: 16 }}>
+            <div style={{
+              marginTop: 16,
+              background: 'linear-gradient(135deg, rgba(255,217,61,0.08), rgba(255,217,61,0.02))',
+              border: '1px solid rgba(255,217,61,0.2)',
+              borderRadius: 20,
+              padding: '20px 24px 16px',
+              boxShadow: '0 4px 32px rgba(255,217,61,0.12), inset 0 1px 0 rgba(255,255,255,0.08)',
+            }}>
               <div style={{
                 fontSize: 72, fontWeight: 900, lineHeight: 1,
                 color: 'var(--nd-primary)',
                 fontFamily: "'JetBrains Mono', monospace",
-                textShadow: '0 4px 24px rgba(251,191,36,0.45)',
+                textShadow: '0 0 40px rgba(255,217,61,0.6), 0 4px 24px rgba(0,0,0,0.5)',
                 fontVariantNumeric: 'tabular-nums',
               }}>
                 {animatedScore}
@@ -547,7 +559,7 @@ export default function App() {
               onClick={() => downloadScoreCard({
                 mode: state.mode,
                 glyph: MIXED_GLYPH,
-                color: MIXED_COLOR,
+                color: ND_PRIMARY_HEX,
                 score: finalScore,
                 killed: state.killedSoFar,
                 accuracy,
@@ -565,6 +577,7 @@ export default function App() {
               {t('game.menuBack')}
             </button>
           </div>
+          <DonationFooter />
         </div>
         {showLeaderboard && (
           <LeaderboardModal
@@ -1180,9 +1193,10 @@ const WIDE_PANEL_STYLE: React.CSSProperties = {
   display: 'flex', flexDirection: 'column', gap: 12,
   overflowY: 'auto',
   zIndex: 1,
-  background: 'rgba(10,10,26,0.6)',
-  backdropFilter: 'blur(8px)',
-  borderColor: 'rgba(255,255,255,0.06)',
+  background: 'linear-gradient(180deg, rgba(10,10,26,0.88) 0%, rgba(14,14,40,0.78) 100%)',
+  backdropFilter: 'blur(12px)',
+  borderColor: 'rgba(255,255,255,0.08)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05), 0 0 40px rgba(0,0,0,0.3)',
 };
 
 function WideMenuLeft({ mode }: { mode: EquationKind }) {
@@ -1266,8 +1280,9 @@ function WideGameLeft({ state }: { state: import('./game/types').GameState }) {
         <div key={label} style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           padding: '7px 10px', borderRadius: 8,
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.05)',
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01))',
+          border: '1px solid rgba(255,255,255,0.07)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
         }}>
           <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>{label}</span>
           <span style={{ fontSize: 14, fontWeight: 900, color, fontFamily: "'JetBrains Mono', monospace" }}>{value}</span>
@@ -1322,6 +1337,9 @@ function WideGameRight({ state }: { state: import('./game/types').GameState }) {
 }
 
 function primaryBtn(color: string): React.CSSProperties {
+  const shadow = color.startsWith('var(')
+    ? `0 3px 10px color-mix(in srgb, ${color} 40%, transparent)`
+    : `0 3px 10px ${color}66`;
   return {
     background: color,
     border: 'none',
@@ -1331,7 +1349,7 @@ function primaryBtn(color: string): React.CSSProperties {
     fontSize: 14,
     fontWeight: 800,
     cursor: 'pointer',
-    boxShadow: `0 3px 10px ${color}66`,
+    boxShadow: shadow,
   };
 }
 
