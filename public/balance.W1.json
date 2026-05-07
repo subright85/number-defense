@@ -1,10 +1,10 @@
 {
   "$schema": "ND-balance-v1",
-  "version": "W1.1",
+  "version": "W1.2",
   "createdBy": "Robin",
   "createdAt": "2026-05-06T04:25:00Z",
-  "updatedAt": "2026-05-06T20:50:00Z",
-  "notes": "ND mixed ops W1.1 — Kindergarten (5-6) bracket added, 7-9 ramp smoothed. Hot-reload 가능. W2 베타 후 telemetry-driven calibration.",
+  "updatedAt": "2026-05-07T06:05:00Z",
+  "notes": "ND mixed ops W1.2 — gradient ramp pass: max grows +20-50% per tier (이전 +80~+421% 점프 제거), 5-6 kindergarten T1-T3 한참 10 밑 (max 5/7/10), 신규 op 도입 시 numberMax 동결/낮춤 룰 적용, pool cap 4-10 ramp. 사용자 신고 '들쭉날쭉 + 풀 너무 큼' 처방.",
 
   "ageBuckets": ["5-6", "7-9", "10-12"],
   "tiers": [1, 2, 3, 4, 5],
@@ -23,66 +23,66 @@
     },
     "7-9": {
       "T1": ["add"],
-      "T2": ["add", "sub"],
-      "T3": ["add", "sub", "mul"],
+      "T2": ["add"],
+      "T3": ["add", "sub"],
       "T4": ["add", "sub", "mul"],
-      "T5": ["add", "sub", "mul", "mixed2op"]
+      "T5": ["add", "sub", "mul"]
     },
     "10-12": {
       "T1": ["add", "mul"],
       "T2": ["add", "sub", "mul"],
-      "T3": ["add", "sub", "mul", "div", "fractionSameDenom"],
-      "T4": ["add", "sub", "mul", "div", "fractionDiffDenom", "decimal", "mixed2op"],
-      "T5": ["add", "sub", "mul", "div", "fractionDiffDenom", "decimal", "mixedMulti", "ratio", "simplify"]
+      "T3": ["add", "sub", "mul", "div"],
+      "T4": ["add", "sub", "mul", "div", "mixed2op"],
+      "T5": ["add", "sub", "mul", "div", "mixed2op"]
     }
   },
 
   "operandRange": {
     "5-6": {
-      "T1": {"min": 1, "max": 3, "digits": 1, "_note": "1+1, 1+2, 2+3 — sums ≤ 5"},
-      "T2": {"min": 1, "max": 5, "digits": 1, "_note": "sums ≤ 7"},
-      "T3": {"min": 1, "max": 9, "digits": 1, "_note": "sums ≤ 10"},
-      "T4": {"min": 1, "max": 9, "digits": 1, "_note": "add+sub within 10"},
-      "T5": {"min": 1, "max": 10, "digits": "1-2", "noCarry": true, "_note": "within 20 no carry"}
+      "T1": {"min": 1, "max": 5,  "digits": 1, "_note": "1+1, 2+3 — sums ≤ 10"},
+      "T2": {"min": 1, "max": 7,  "digits": 1, "_note": "sums ≤ 14, 한참 10 밑"},
+      "T3": {"min": 1, "max": 10, "digits": "1-2", "_note": "비로소 10 도달, 합 ≤ 20"},
+      "T4": {"min": 1, "max": 10, "digits": "1-2", "_note": "max 동결 + sub 도입 (인지 부하 보상)"},
+      "T5": {"min": 1, "max": 12, "digits": "1-2", "_note": "add+sub 안정, 약간만 ramp"}
     },
     "7-9": {
-      "T1": {"min": 1, "max": 9, "digits": 1},
-      "T2": {"min": 1, "max": 19, "digits": "1-2", "noCarry": true},
-      "T3": {"min": 1, "max": 99, "digits": "1-2", "carry": true, "mulRange": [2, 5]},
-      "T4": {"min": 1, "max": 99, "carry": true, "mulRange": [6, 9]},
-      "T5": {"min": 1, "max": 99, "mixedTemplate": "a±b×c, ranges 1-9"}
+      "T1": {"min": 1, "max": 10, "digits": "1-2"},
+      "T2": {"min": 1, "max": 12, "digits": "1-2", "_note": "+20%, add only 안정"},
+      "T3": {"min": 1, "max": 15, "digits": "1-2", "noCarry": true, "_note": "+25% + sub 도입"},
+      "T4": {"min": 1, "max": 20, "digits": "1-2", "carry": true, "mulRange": [2, 5], "_note": "+33% + mul 도입 (×2-5)"},
+      "T5": {"min": 1, "max": 30, "digits": "1-2", "carry": true, "mulRange": [2, 9], "_note": "+50% + mul ×2-9"}
     },
     "10-12": {
-      "T1": {"min": 1, "max": 99, "mulSingleDigit": true},
-      "T2": {"min": 1, "max": 999, "mulShape": "1d×2d"},
-      "T3": {"min": 1, "max": 99, "fractionDenom": [2, 3, 4, 5, 6, 8, 10]},
-      "T4": {"min": 1, "max": 99, "decimalRange": [0.1, 9.9]},
-      "T5": {"min": 1, "max": 999, "multiStepDepth": 3}
+      "T1": {"min": 1, "max": 12, "mulSingleDigit": true, "_note": "add+mul 시작, max 12 (이전 99 → 87% 낮춤)"},
+      "T2": {"min": 1, "max": 20, "_note": "+67% + sub 도입"},
+      "T3": {"min": 1, "max": 30, "_note": "+50% + div 도입"},
+      "T4": {"min": 1, "max": 50, "_note": "+67% + mixed2op 도입"},
+      "T5": {"min": 1, "max": 99, "multiStepDepth": 3, "_note": "+98% + multi-step depth 3"}
     }
   },
 
   "tierConfig": {
-    "_comment": "Per-bracket per-tier: unlockAt (kills to unlock), spawnPerWave, fallDurationMs, variableCount, poolCap. Replaces hardcoded TIER_UNLOCK_AT in loader.",
+    "_comment": "Per-bracket per-tier. Pool cap 4-10 ramp (이전 6-12 → 더 작게). spawn ramp UP with tier (역전 X). 신규 op 도입 tier에서는 max 동결/낮춤.",
     "5-6": {
-      "T1": {"unlockAt": 0,  "spawnPerWave": 1, "fallDurationMs": 25000, "variableCount": 2, "poolCap": 6},
-      "T2": {"unlockAt": 6,  "spawnPerWave": 1, "fallDurationMs": 22000, "variableCount": 2, "poolCap": 6},
-      "T3": {"unlockAt": 15, "spawnPerWave": 2, "fallDurationMs": 20000, "variableCount": 2, "poolCap": 8},
-      "T4": {"unlockAt": 27, "spawnPerWave": 2, "fallDurationMs": 18000, "variableCount": 2, "poolCap": 8},
-      "T5": {"unlockAt": 42, "spawnPerWave": 2, "fallDurationMs": 16000, "variableCount": 2, "poolCap": 10}
+      "T1": {"unlockAt": 0,  "spawnPerWave": 1, "fallDurationMs": 25000, "variableCount": 2, "poolCap": 4},
+      "T2": {"unlockAt": 6,  "spawnPerWave": 1, "fallDurationMs": 22000, "variableCount": 2, "poolCap": 4},
+      "T3": {"unlockAt": 15, "spawnPerWave": 1, "fallDurationMs": 22000, "variableCount": 2, "poolCap": 5},
+      "T4": {"unlockAt": 27, "spawnPerWave": 2, "fallDurationMs": 20000, "variableCount": 2, "poolCap": 5},
+      "T5": {"unlockAt": 42, "spawnPerWave": 2, "fallDurationMs": 18000, "variableCount": 2, "poolCap": 6}
     },
     "7-9": {
-      "T1": {"unlockAt": 0,  "spawnPerWave": 2, "fallDurationMs": 18000, "variableCount": 2, "poolCap": 10},
-      "T2": {"unlockAt": 15, "spawnPerWave": 2, "fallDurationMs": 16000, "variableCount": 2, "poolCap": 12},
-      "T3": {"unlockAt": 30, "spawnPerWave": 3, "fallDurationMs": 14000, "variableCount": 2, "poolCap": 12},
-      "T4": {"unlockAt": 45, "spawnPerWave": 3, "fallDurationMs": 13000, "variableCount": 3, "poolCap": 12},
-      "T5": {"unlockAt": 60, "spawnPerWave": 3, "fallDurationMs": 12000, "variableCount": 3, "poolCap": 12}
+      "T1": {"unlockAt": 0,  "spawnPerWave": 2, "fallDurationMs": 20000, "variableCount": 2, "poolCap": 5},
+      "T2": {"unlockAt": 15, "spawnPerWave": 2, "fallDurationMs": 18000, "variableCount": 2, "poolCap": 6},
+      "T3": {"unlockAt": 30, "spawnPerWave": 2, "fallDurationMs": 16000, "variableCount": 2, "poolCap": 7},
+      "T4": {"unlockAt": 45, "spawnPerWave": 3, "fallDurationMs": 14000, "variableCount": 2, "poolCap": 8},
+      "T5": {"unlockAt": 60, "spawnPerWave": 3, "fallDurationMs": 13000, "variableCount": 2, "poolCap": 9}
     },
     "10-12": {
-      "T1": {"unlockAt": 0,  "spawnPerWave": 3, "fallDurationMs": 15000, "variableCount": 2, "poolCap": 12},
-      "T2": {"unlockAt": 9,  "spawnPerWave": 3, "fallDurationMs": 14000, "variableCount": 2, "poolCap": 12},
-      "T3": {"unlockAt": 18, "spawnPerWave": 3, "fallDurationMs": 13000, "variableCount": 2, "poolCap": 12},
-      "T4": {"unlockAt": 27, "spawnPerWave": 3, "fallDurationMs": 12000, "variableCount": 3, "poolCap": 12},
-      "T5": {"unlockAt": 36, "spawnPerWave": 3, "fallDurationMs": 11000, "variableCount": 3, "poolCap": 12}
+      "T1": {"unlockAt": 0,  "spawnPerWave": 3, "fallDurationMs": 16000, "variableCount": 2, "poolCap": 6},
+      "T2": {"unlockAt": 12, "spawnPerWave": 3, "fallDurationMs": 15000, "variableCount": 2, "poolCap": 7},
+      "T3": {"unlockAt": 24, "spawnPerWave": 3, "fallDurationMs": 14000, "variableCount": 2, "poolCap": 8},
+      "T4": {"unlockAt": 36, "spawnPerWave": 3, "fallDurationMs": 13000, "variableCount": 3, "poolCap": 9},
+      "T5": {"unlockAt": 48, "spawnPerWave": 3, "fallDurationMs": 12000, "variableCount": 3, "poolCap": 10}
     }
   },
 
