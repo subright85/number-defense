@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { loadBalance, getStage, getLeaderboard, recordScore, getDailyBest, recordDaily, dailyKindForDate, dateKey, getNickname, setNickname, evaluate } from './game/engine';
+import { loadBalance, getStage, getLeaderboard, recordScore, getNickname, setNickname, evaluate } from './game/engine';
 import type { LeaderboardEntry } from './game/engine';
 import { useGameLoop } from './game/useGameLoop';
 import { useT, type Locale, type TFn } from './i18n';
@@ -92,17 +92,11 @@ const ND_PRIMARY_HEX = '#FFD93D';
 const MIXED_COLOR = 'var(--nd-primary)';
 const MIXED_GLYPH = '∞';
 
-const MODE_META: Record<EquationKind, { color: string; label: string; glyph: string }> = {
-  add: { color: '#5cc28d', label: 'Addition',       glyph: '+' },
-  sub: { color: '#ff6b6b', label: 'Subtraction',    glyph: '−' },
-  mul: { color: '#ffd166', label: 'Multiplication', glyph: '×' },
-  div: { color: '#4ecdc4', label: 'Division',       glyph: '÷' },
-};
 
 export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [now, setNow] = useState(Date.now());
-  const { state, flashes, tankHits, splitAnims, startGame, startDaily, restart, togglePause, tap, drop, untap, submit, clear } = useGameLoop();
+  const { state, flashes, tankHits, splitAnims, startGame, restart, togglePause, tap, drop, untap, submit, clear } = useGameLoop();
   const recentlyKilledRef = useRef<Map<string, number>>(new Map());
   const { locale, toggleLocale, t } = useT();
   const recordedHighScoreRef = useRef(false);
@@ -326,26 +320,15 @@ export default function App() {
     const survivedSec = state.startedAt > 0
       ? Math.max(0, Math.floor((Date.now() - state.startedAt - state.pausedTotal - livePauseElapsed) / 1000))
       : 0;
-    if (state.isDaily) {
-      recordDaily({
-        score: finalScore,
-        killed: state.killedSoFar,
-        accuracyPct: Math.round(accuracy * 100),
-        survivedSec,
-        bestCombo: state.bestCombo,
-      }, state.dailyDateKey);
-      setLatestHighScoreSnapshot({ isNew: false, previous: 0, rank: null });
-    } else {
-      const result = recordScore(state.mode, {
-        score: finalScore,
-        killed: state.killedSoFar,
-        accuracyPct: Math.round(accuracy * 100),
-        survivedSec,
-        name: nickname || undefined,
-      });
-      setLatestHighScoreSnapshot(result);
-    }
-  }, [state.phase, state.mode, state.score, state.attempts, state.hits, state.killedSoFar, state.startedAt, state.isDaily, state.dailyDateKey, state.bestCombo, state.pausedAt, state.pausedTotal, nickname]);
+    const result = recordScore(state.mode, {
+      score: finalScore,
+      killed: state.killedSoFar,
+      accuracyPct: Math.round(accuracy * 100),
+      survivedSec,
+      name: nickname || undefined,
+    });
+    setLatestHighScoreSnapshot(result);
+  }, [state.phase, state.mode, state.score, state.attempts, state.hits, state.killedSoFar, state.startedAt, state.bestCombo, state.pausedAt, state.pausedTotal, nickname]);
 
   if (!loaded) {
     return (
@@ -423,8 +406,6 @@ export default function App() {
             </span>
           </div>
 
-          <DailyChallengeCard onStart={() => { unlockAudio(); playStart(); startDaily(ageBracket); }} />
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <button
               onClick={() => { unlockAudio(); playStart(); startGame('add', ageBracket); }}
@@ -479,13 +460,11 @@ export default function App() {
         <MuteToggle muted={muted} onToggle={() => { unlockAudio(); const next = !muted; setMuted(next); setMutedState(next); }} />
         <div style={{ textAlign: 'center', maxWidth: 360, padding: 24 }}>
           <h1 style={{ fontSize: 28, margin: 0, color: 'var(--nd-accent-red)' }}>
-            {state.isDaily ? '🎯 Daily — Game Over' : t('over.gameover')}
+            {t('over.gameover')}
           </h1>
           <div style={{ marginTop: 18, fontSize: 14, color: 'rgba(255,255,255,0.78)', lineHeight: 1.7 }}>
             <div>
-              {state.isDaily ? '🎯 Daily' : `${MIXED_GLYPH} Mixed`}
-              {state.isDaily && <span style={{ opacity: 0.5, margin: '0 6px' }}>·</span>}
-              {state.isDaily && <span style={{ color: 'var(--nd-primary)', fontWeight: 700 }}>{state.dailyDateKey}</span>}
+              {`${MIXED_GLYPH} Mixed`}
               <span style={{ opacity: 0.5, margin: '0 6px' }}>·</span>
               {survivedSec}s
             </div>
@@ -513,7 +492,7 @@ export default function App() {
                 = {state.score} × {accuracy}%
               </div>
             </div>
-            {hsSnap && hsSnap.isNew && !state.isDaily && (
+            {hsSnap && hsSnap.isNew && (
               <div style={{
                 marginTop: 8, fontSize: 12, fontWeight: 800,
                 color: 'var(--nd-accent-green)',
@@ -524,22 +503,6 @@ export default function App() {
                 ⭐ NEW BEST · prev {hsSnap.previous}
               </div>
             )}
-            {state.isDaily && (() => {
-              const todayBest = getDailyBest(state.dailyDateKey);
-              if (!todayBest) return null;
-              const isToday = todayBest.score === finalScore && todayBest.bestCombo === state.bestCombo;
-              return (
-                <div style={{
-                  marginTop: 8, fontSize: 12, fontWeight: 800,
-                  color: isToday ? 'var(--nd-accent-green)' : 'var(--nd-primary)',
-                  background: isToday ? 'rgba(107,207,127,0.15)' : 'rgba(255,217,61,0.12)',
-                  border: `1px solid ${isToday ? 'rgba(107,207,127,0.4)' : 'rgba(255,217,61,0.4)'}`,
-                  borderRadius: 8, padding: '6px 12px', display: 'inline-block',
-                }}>
-                  {isToday ? '⭐ NEW DAILY BEST' : `today's best · ${todayBest.score}`}
-                </div>
-              );
-            })()}
             {hsSnap && !hsSnap.isNew && hsSnap.rank && (
               <div style={{ marginTop: 6, fontSize: 11, color: 'var(--nd-primary)', fontWeight: 700 }}>
                 Top 10 · ranked #{hsSnap.rank} (best {hsSnap.previous})
@@ -553,7 +516,7 @@ export default function App() {
           </div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 22, flexWrap: 'wrap' }}>
             <button
-              onClick={() => { unlockAudio(); playUiTap(); playStart(); state.isDaily ? startDaily(ageBracket) : startGame('add', ageBracket); }}
+              onClick={() => { unlockAudio(); playUiTap(); playStart(); startGame('add', ageBracket); }}
               style={primaryBtn(MIXED_COLOR)}
             >
               {t('game.retry')}
@@ -1473,59 +1436,6 @@ function secondaryBtn(): React.CSSProperties {
     fontWeight: 700,
     cursor: 'pointer',
   };
-}
-
-function DailyChallengeCard({ onStart }: { onStart: () => void }) {
-  const today = dateKey();
-  const mode = dailyKindForDate();
-  const meta = MODE_META[mode];
-  const best = getDailyBest(today);
-  return (
-    <button
-      onClick={onStart}
-      style={{
-        marginTop: 18,
-        width: '100%',
-        background: `linear-gradient(120deg, ${meta.color}88, ${meta.color}44)`,
-        border: `1.5px solid ${meta.color}`,
-        borderRadius: 14,
-        padding: '14px 16px',
-        color: 'white',
-        cursor: 'pointer',
-        textAlign: 'left',
-        boxShadow: `0 6px 18px ${meta.color}55`,
-      }}
-      className="nd-btn"
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-            🎯 Today's Challenge
-          </div>
-          <div style={{ fontSize: 16, fontWeight: 800, marginTop: 2 }}>
-            {meta.glyph} mode · {today}
-          </div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          {best ? (
-            <>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>YOUR BEST</div>
-              <div style={{ fontSize: 18, fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", color: '#fbbf24' }}>
-                {best.score}
-              </div>
-              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.55)' }}>
-                {best.survivedSec}s · {best.accuracyPct}%
-              </div>
-            </>
-          ) : (
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 700 }}>
-              ▶ Play
-            </div>
-          )}
-        </div>
-      </div>
-    </button>
-  );
 }
 
 const PROJECTILE_FLY_MS = 240;

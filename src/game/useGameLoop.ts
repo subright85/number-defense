@@ -83,10 +83,17 @@ export function useGameLoop() {
         let next = prev;
         next = refillPool(next, now, rngRef.current);
         next = tickEnemies(next, now);
+        // Spawn next enemy mid-wave when EITHER:
+        //  - the configured interval has elapsed (normal pacing), OR
+        //  - the screen is empty + a small breathing window passed (kills dead time
+        //    when the player solves faster than the interval).
+        const sinceLastSpawn = now - next.lastSpawnAt;
+        const intervalElapsed = sinceLastSpawn >= stage.spawnIntervalMs;
+        const screenEmptyGap = next.enemies.length === 0 && sinceLastSpawn >= 1200;
         if (
           next.phase === 'playing' &&
           next.spawnedSoFar < stage.spawnPerWave &&
-          now - next.lastSpawnAt >= stage.spawnIntervalMs
+          (intervalElapsed || screenEmptyGap)
         ) {
           next = spawnEnemy(next, now, rngRef.current);
         }
