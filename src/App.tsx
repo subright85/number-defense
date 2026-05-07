@@ -880,15 +880,20 @@ export default function App() {
         <button onClick={clear} style={secondaryBtn()}>{t('eq.clear')}</button>
       </div>
 
-      {/* Pool */}
+      {/* Pool — 모바일: pool>5면 2행 wrap, 데스크탑: 1행 유지 */}
+      {(() => {
+        const poolLen = state.pool.length;
+        const cols = isWide || poolLen <= 5 ? poolLen : Math.ceil(poolLen / 2);
+        return (
       <div style={{
         display: 'grid',
-        gridTemplateColumns: `repeat(${state.pool.length}, 60px)`,
+        gridTemplateColumns: `repeat(${cols}, 60px)`,
         gap: 8,
         padding: 10,
         background: 'rgba(255,255,255,0.03)',
         border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: 14,
+        justifyContent: 'center',
       }}>
         {state.pool.map((p, idx) => {
           const isRefilling = !!p.refillingUntilMs && p.refillingUntilMs > now;
@@ -913,6 +918,8 @@ export default function App() {
           );
         })}
       </div>
+        );
+      })()}
 
       <div style={{
         fontSize: 11, color: 'rgba(255,255,255,0.45)',
