@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { EquationKind, GameState } from './types';
+import type { AgeBracket, EquationKind, GameState } from './types';
 import {
   createInitialState, startEndlessRun, startDailyRun, pauseGame, resumeGame,
   spawnEnemy, tickEnemies, refillPool, endWave,
@@ -34,28 +34,30 @@ export function useGameLoop() {
   const [splitAnims, setSplitAnims] = useState<SplitAnim[]>([]);
   const rngRef = useRef<() => number>(Math.random);
 
-  const startGame = useCallback((mode: EquationKind = 'add') => {
+  const startGame = useCallback((mode: EquationKind = 'add', ageBracket?: AgeBracket) => {
     const now = Date.now();
     rngRef.current = Math.random;
     setState(s => {
-      const fresh = startEndlessRun(s, mode, now, rngRef.current);
+      const withAge = ageBracket ? { ...s, ageBracket } : s;
+      const fresh = startEndlessRun(withAge, mode, now, rngRef.current);
       return spawnEnemy(fresh, now, rngRef.current);
     });
     setFlashes([]);
   }, []);
 
-  const startDaily = useCallback(() => {
+  const startDaily = useCallback((ageBracket?: AgeBracket) => {
     const now = Date.now();
     rngRef.current = mulberry32(dailySeed());
     setState(s => {
-      const fresh = startDailyRun(s, now, rngRef.current);
+      const withAge = ageBracket ? { ...s, ageBracket } : s;
+      const fresh = startDailyRun(withAge, now, rngRef.current);
       return spawnEnemy(fresh, now, rngRef.current);
     });
     setFlashes([]);
   }, []);
 
-  const restart = useCallback(() => {
-    setState(createInitialState());
+  const restart = useCallback((ageBracket?: AgeBracket) => {
+    setState(createInitialState(Math.random, ageBracket ?? '7-9'));
     setFlashes([]);
   }, []);
 

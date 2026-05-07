@@ -2,7 +2,7 @@
 
 export type EquationKind = 'add' | 'sub' | 'mul' | 'div';
 export type FormulaKind = EquationKind | 'mixed2op';
-export type AgeBracket = '7-9' | '10-12';
+export type AgeBracket = '5-6' | '7-9' | '10-12';
 export type EnemyKind = 'balloon' | 'tank' | 'fast' | 'splitter' | 'shielded';
 
 // Slot in the equation builder. Fixed operators and player-fillable variables.

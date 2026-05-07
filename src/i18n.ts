@@ -57,6 +57,14 @@ const EN = {
   'ltr.heading': 'Equations solve left to right!',
   'ltr.body': 'e.g. 3 + 2 × 4 → 5 × 4 → 20',
   'ltr.note': '(no PEMDAS — left to right only)',
+
+  'age.label': 'Age',
+  'age.5-6': 'Kindergarten (5–6)',
+  'age.7-9': 'Grade 1–3 (7–9)',
+  'age.10-12': 'Grade 4–6 (10–12)',
+  'age.5-6.short': 'K',
+  'age.7-9.short': '1–3',
+  'age.10-12.short': '4–6',
 };
 
 const KO: typeof EN = {
@@ -114,9 +122,20 @@ const KO: typeof EN = {
   'ltr.heading': '수식은 왼쪽부터 순서대로 풀어요!',
   'ltr.body': '예: 3 + 2 × 4 → 5 × 4 → 20',
   'ltr.note': '(× ÷ 먼저 X, 학교에서 배운 순서랑 달라요)',
+
+  'age.label': '나이',
+  'age.5-6': '유치원 (5–6세)',
+  'age.7-9': '초등 저학년 (7–9세)',
+  'age.10-12': '초등 고학년 (10–12세)',
+  'age.5-6.short': '유치원',
+  'age.7-9.short': '저학년',
+  'age.10-12.short': '고학년',
 };
 
 const DICTS: Record<Locale, typeof EN> = { en: EN, ko: KO };
+
+export type I18nKey = keyof typeof EN;
+export type TFn = (key: I18nKey, params?: Record<string, string | number>) => string;
 
 export function useT() {
   const [locale, setLocaleState] = useState<Locale>(() => {

@@ -1,11 +1,12 @@
 {
   "$schema": "ND-balance-v1",
-  "version": "W1.0",
+  "version": "W1.1",
   "createdBy": "Robin",
   "createdAt": "2026-05-06T04:25:00Z",
-  "notes": "ND mixed ops W1 balance. Hot-reload 가능. W2 베타 후 telemetry-driven calibration.",
+  "updatedAt": "2026-05-06T20:50:00Z",
+  "notes": "ND mixed ops W1.1 — Kindergarten (5-6) bracket added, 7-9 ramp smoothed. Hot-reload 가능. W2 베타 후 telemetry-driven calibration.",
 
-  "ageBuckets": ["7-9", "10-12"],
+  "ageBuckets": ["5-6", "7-9", "10-12"],
   "tiers": [1, 2, 3, 4, 5],
   "roundToTier": {
     "rule": "ceil(round / 3)",
@@ -13,6 +14,13 @@
   },
 
   "allowedOps": {
+    "5-6": {
+      "T1": ["add"],
+      "T2": ["add"],
+      "T3": ["add"],
+      "T4": ["add", "sub"],
+      "T5": ["add", "sub"]
+    },
     "7-9": {
       "T1": ["add"],
       "T2": ["add", "sub"],
@@ -30,6 +38,13 @@
   },
 
   "operandRange": {
+    "5-6": {
+      "T1": {"min": 1, "max": 3, "digits": 1, "_note": "1+1, 1+2, 2+3 — sums ≤ 5"},
+      "T2": {"min": 1, "max": 5, "digits": 1, "_note": "sums ≤ 7"},
+      "T3": {"min": 1, "max": 9, "digits": 1, "_note": "sums ≤ 10"},
+      "T4": {"min": 1, "max": 9, "digits": 1, "_note": "add+sub within 10"},
+      "T5": {"min": 1, "max": 10, "digits": "1-2", "noCarry": true, "_note": "within 20 no carry"}
+    },
     "7-9": {
       "T1": {"min": 1, "max": 9, "digits": 1},
       "T2": {"min": 1, "max": 19, "digits": "1-2", "noCarry": true},
@@ -43,6 +58,31 @@
       "T3": {"min": 1, "max": 99, "fractionDenom": [2, 3, 4, 5, 6, 8, 10]},
       "T4": {"min": 1, "max": 99, "decimalRange": [0.1, 9.9]},
       "T5": {"min": 1, "max": 999, "multiStepDepth": 3}
+    }
+  },
+
+  "tierConfig": {
+    "_comment": "Per-bracket per-tier: unlockAt (kills to unlock), spawnPerWave, fallDurationMs, variableCount, poolCap. Replaces hardcoded TIER_UNLOCK_AT in loader.",
+    "5-6": {
+      "T1": {"unlockAt": 0,  "spawnPerWave": 1, "fallDurationMs": 25000, "variableCount": 2, "poolCap": 6},
+      "T2": {"unlockAt": 6,  "spawnPerWave": 1, "fallDurationMs": 22000, "variableCount": 2, "poolCap": 6},
+      "T3": {"unlockAt": 15, "spawnPerWave": 2, "fallDurationMs": 20000, "variableCount": 2, "poolCap": 8},
+      "T4": {"unlockAt": 27, "spawnPerWave": 2, "fallDurationMs": 18000, "variableCount": 2, "poolCap": 8},
+      "T5": {"unlockAt": 42, "spawnPerWave": 2, "fallDurationMs": 16000, "variableCount": 2, "poolCap": 10}
+    },
+    "7-9": {
+      "T1": {"unlockAt": 0,  "spawnPerWave": 2, "fallDurationMs": 18000, "variableCount": 2, "poolCap": 10},
+      "T2": {"unlockAt": 15, "spawnPerWave": 2, "fallDurationMs": 16000, "variableCount": 2, "poolCap": 12},
+      "T3": {"unlockAt": 30, "spawnPerWave": 3, "fallDurationMs": 14000, "variableCount": 2, "poolCap": 12},
+      "T4": {"unlockAt": 45, "spawnPerWave": 3, "fallDurationMs": 13000, "variableCount": 3, "poolCap": 12},
+      "T5": {"unlockAt": 60, "spawnPerWave": 3, "fallDurationMs": 12000, "variableCount": 3, "poolCap": 12}
+    },
+    "10-12": {
+      "T1": {"unlockAt": 0,  "spawnPerWave": 3, "fallDurationMs": 15000, "variableCount": 2, "poolCap": 12},
+      "T2": {"unlockAt": 9,  "spawnPerWave": 3, "fallDurationMs": 14000, "variableCount": 2, "poolCap": 12},
+      "T3": {"unlockAt": 18, "spawnPerWave": 3, "fallDurationMs": 13000, "variableCount": 2, "poolCap": 12},
+      "T4": {"unlockAt": 27, "spawnPerWave": 3, "fallDurationMs": 12000, "variableCount": 3, "poolCap": 12},
+      "T5": {"unlockAt": 36, "spawnPerWave": 3, "fallDurationMs": 11000, "variableCount": 3, "poolCap": 12}
     }
   },
 
@@ -77,32 +117,74 @@
   },
 
   "enemyDistribution": {
-    "byRound": {
-      "1":  {"balloon": 1.00},
-      "2":  {"balloon": 1.00},
-      "3":  {"balloon": 1.00},
-      "4":  {"balloon": 0.50, "tank": 0.50},
-      "5":  {"balloon": 0.65, "tank": 0.35},
-      "6":  {"balloon": 0.40, "tank": 0.30, "fast": 0.30},
-      "7":  {"balloon": 0.40, "tank": 0.30, "fast": 0.30},
-      "8":  {"balloon": 0.30, "tank": 0.25, "fast": 0.25, "splitter": 0.20},
-      "9":  {"balloon": 0.30, "tank": 0.25, "fast": 0.25, "splitter": 0.20},
-      "10": {"balloon": 0.25, "tank": 0.25, "fast": 0.20, "splitter": 0.20, "shielded": 0.10},
-      "11": {"balloon": 0.25, "tank": 0.25, "fast": 0.20, "splitter": 0.20, "shielded": 0.10}
+    "byBracket": {
+      "5-6": {
+        "_note": "Kindergarten — balloon-only across all rounds. Fast/splitter/shielded too overwhelming.",
+        "byRound": {
+          "1": {"balloon": 1.00}
+        },
+        "stableFromRound": 1,
+        "stableDistribution": {"balloon": 1.00}
+      },
+      "7-9": {
+        "byRound": {
+          "1":  {"balloon": 1.00},
+          "2":  {"balloon": 1.00},
+          "3":  {"balloon": 1.00},
+          "4":  {"balloon": 0.50, "tank": 0.50},
+          "5":  {"balloon": 0.65, "tank": 0.35},
+          "6":  {"balloon": 0.40, "tank": 0.30, "fast": 0.30},
+          "7":  {"balloon": 0.40, "tank": 0.30, "fast": 0.30},
+          "8":  {"balloon": 0.30, "tank": 0.25, "fast": 0.25, "splitter": 0.20},
+          "9":  {"balloon": 0.30, "tank": 0.25, "fast": 0.25, "splitter": 0.20},
+          "10": {"balloon": 0.25, "tank": 0.25, "fast": 0.20, "splitter": 0.20, "shielded": 0.10},
+          "11": {"balloon": 0.25, "tank": 0.25, "fast": 0.20, "splitter": 0.20, "shielded": 0.10}
+        },
+        "stableFromRound": 12,
+        "stableDistribution": {
+          "balloon": 0.25, "tank": 0.25, "fast": 0.20, "splitter": 0.20, "shielded": 0.10
+        }
+      },
+      "10-12": {
+        "byRound": {
+          "1":  {"balloon": 1.00},
+          "2":  {"balloon": 1.00},
+          "3":  {"balloon": 1.00},
+          "4":  {"balloon": 0.50, "tank": 0.50},
+          "5":  {"balloon": 0.65, "tank": 0.35},
+          "6":  {"balloon": 0.40, "tank": 0.30, "fast": 0.30},
+          "7":  {"balloon": 0.40, "tank": 0.30, "fast": 0.30},
+          "8":  {"balloon": 0.30, "tank": 0.25, "fast": 0.25, "splitter": 0.20},
+          "9":  {"balloon": 0.30, "tank": 0.25, "fast": 0.25, "splitter": 0.20},
+          "10": {"balloon": 0.25, "tank": 0.25, "fast": 0.20, "splitter": 0.20, "shielded": 0.10},
+          "11": {"balloon": 0.25, "tank": 0.25, "fast": 0.20, "splitter": 0.20, "shielded": 0.10}
+        },
+        "stableFromRound": 12,
+        "stableDistribution": {
+          "balloon": 0.25, "tank": 0.25, "fast": 0.20, "splitter": 0.20, "shielded": 0.10
+        }
+      }
     },
-    "stableFromRound": 12,
-    "stableDistribution": {
-      "balloon": 0.25,
-      "tank": 0.25,
-      "fast": 0.20,
-      "splitter": 0.20,
-      "shielded": 0.10
+    "_legacyFallback": {
+      "byRound": {
+        "1":  {"balloon": 1.00},
+        "2":  {"balloon": 1.00},
+        "3":  {"balloon": 1.00},
+        "4":  {"balloon": 0.50, "tank": 0.50}
+      },
+      "stableFromRound": 12,
+      "stableDistribution": {
+        "balloon": 0.25, "tank": 0.25, "fast": 0.20, "splitter": 0.20, "shielded": 0.10
+      }
     },
-    "_distributionRule": "도입 라운드 30-50% 비중, 다음 라운드부터 점진 normalize, R12+ 고정",
-    "interpolation": "라운드 11 초과 시 stableDistribution 사용"
+    "_distributionRule": "5-6 = balloon-only; 7-9/10-12 도입 라운드 30-50% 비중, 다음 라운드부터 점진 normalize, R12+ 고정"
   },
 
   "constraints": {
+    "5-6": {
+      "splitterShieldedCoOccurrenceCapPercent": 0,
+      "_note": "Kindergarten — variant enemies disabled entirely (see enemyDistribution.byBracket.5-6)"
+    },
     "7-9": {
       "splitterShieldedCoOccurrenceCapPercent": 30,
       "_note": "한 wave 안에 Splitter + Shielded 동시 등장 wave 비율 ≤ 30% (frustration 게이트)"
@@ -125,6 +207,7 @@
 
   "spawn": {
     "wavePeriodSec": 60,
+    "_note": "Per-tier spawnPerWave is now in tierConfig.<bracket>.<tier>.spawnPerWave (per-bracket override). Legacy fallback below.",
     "spawnPerWave": {"T1": 3, "T2": 2, "T3": 2, "T4": 2, "T5": 2}
   },
 
@@ -147,7 +230,7 @@
   "TBD": [
     "T5 mixed2op 정답 보증 brute-force 시뮬 (numpy 1만회) — cap 12 충분 검증",
     "operandRange 분수/소수 정확한 generator 룰 (W1 후반)",
-    "enemy 분포 calibration — Franky spawn rate spec 받은 후 DPM 정합",
-    "10-12세 T5 ratio/simplify 문제 템플릿 정의"
+    "10-12세 T5 ratio/simplify 문제 템플릿 정의",
+    "5-6 bracket — kid playtesting 후 spawnPerWave/fall 캘리브레이션"
   ]
 }

@@ -2,12 +2,21 @@
 // W1 schema is tier × ageBracket-based; old schema was stages[].
 import type { AgeBracket, EnemyKind, FormulaKind, Stage } from './types';
 
+export interface TierConfigEntry {
+  unlockAt: number;
+  spawnPerWave: number;
+  fallDurationMs: number;
+  variableCount: 2 | 3;
+  poolCap?: number;
+}
+
 export interface W1Json {
   version: string;
   ageBuckets: AgeBracket[];
   tiers: number[];
   allowedOps: Record<AgeBracket, Record<string, FormulaKind[]>>;
   operandRange: Record<AgeBracket, Record<string, { min: number; max: number; mulRange?: number[] }>>;
+  tierConfig?: Record<AgeBracket, Record<string, TierConfigEntry>>;
   pool: {
     cap: number;
     answerGuarantee: { rerollMaxN: number; fallback: { replaceCount: number; preserveCount: number } };
@@ -15,11 +24,18 @@ export interface W1Json {
     entropyGuard: { threshold: number; window: number };
   };
   enemyDistribution: {
-    byRound: Record<string, Partial<Record<EnemyKind, number>>>;
-    stableFromRound: number;
-    stableDistribution: Partial<Record<EnemyKind, number>>;
+    byBracket?: Record<AgeBracket, {
+      byRound: Record<string, Partial<Record<EnemyKind, number>>>;
+      stableFromRound: number;
+      stableDistribution: Partial<Record<EnemyKind, number>>;
+    }>;
+    // Legacy flat shape (W1.0)
+    byRound?: Record<string, Partial<Record<EnemyKind, number>>>;
+    stableFromRound?: number;
+    stableDistribution?: Partial<Record<EnemyKind, number>>;
   };
   constraints: {
+    '5-6'?: { splitterShieldedCoOccurrenceCapPercent: number };
     '7-9': { splitterShieldedCoOccurrenceCapPercent: number };
     '10-12': { splitterShieldedCoOccurrenceCapPercent: number | null };
     global: { maxOperandsPerProblem: number; maxAnswerValue: number; negativeAnswerAllowed: boolean };
@@ -30,18 +46,12 @@ export interface W1Json {
   };
 }
 
-// Unlock thresholds (killedSoFar) for each tier transition.
-// Based on round-to-tier: T1=R1-3, T2=R4-6, T3=R7-9, T4=R10-12, T5=R13+
-// Estimated kills: T1 avg 3/wave × 3 waves = 9, T2 avg 2/wave, etc.
-const TIER_UNLOCK_AT: Record<number, number> = {
-  1: 0,
-  2: 9,
-  3: 15,
-  4: 21,
-  5: 27,
+// Fallback unlock thresholds if tierConfig missing (W1.0 compat).
+const LEGACY_TIER_UNLOCK_AT: Record<number, number> = {
+  1: 0, 2: 9, 3: 15, 4: 21, 5: 27,
 };
 
-const VARIABLE_COUNT_FOR_TIER: Record<number, 2 | 3> = {
+const LEGACY_VARIABLE_COUNT_FOR_TIER: Record<number, 2 | 3> = {
   1: 2, 2: 2, 3: 2, 4: 3, 5: 3,
 };
 
@@ -49,9 +59,9 @@ function tierKey(tier: number) {
   return `T${tier}`;
 }
 
+// Stage index encoding: 5-6 → 90-94, 7-9 → 100-104, 10-12 → 110-114
 function stageIndex(ageBracket: AgeBracket, tier: number): number {
-  // 7-9 → 100-104, 10-12 → 110-114
-  const base = ageBracket === '7-9' ? 100 : 110;
+  const base = ageBracket === '5-6' ? 90 : ageBracket === '7-9' ? 100 : 110;
   return base + (tier - 1);
 }
 
@@ -62,9 +72,14 @@ export function buildStagesFromW1(w1: W1Json): Stage[] {
       const tk = tierKey(tier);
       const allowedOps = w1.allowedOps[bracket]?.[tk] ?? ['add'];
       const range = w1.operandRange[bracket]?.[tk] ?? { min: 1, max: 9 };
-      const spawnPerWave = w1.spawn.spawnPerWave[tk] ?? 2;
+      const cfg = w1.tierConfig?.[bracket]?.[tk];
+
+      const unlockAt = cfg?.unlockAt ?? LEGACY_TIER_UNLOCK_AT[tier] ?? 0;
+      const spawnPerWave = cfg?.spawnPerWave ?? w1.spawn.spawnPerWave[tk] ?? 2;
+      const variableCount = cfg?.variableCount ?? LEGACY_VARIABLE_COUNT_FOR_TIER[tier] ?? 2;
+      const fallDurationMs = cfg?.fallDurationMs ?? (16000 - tier * 1000);
       const spawnIntervalMs = Math.round((w1.spawn.wavePeriodSec * 1000) / spawnPerWave);
-      const fallDurationMs = 16000 - tier * 1000; // T1=15s, T5=11s
+
       const primaryKind = (allowedOps.find(op => op !== 'mixed2op') ?? allowedOps[0]) as 'add' | 'sub' | 'mul' | 'div';
 
       stages.push({
@@ -72,8 +87,8 @@ export function buildStagesFromW1(w1: W1Json): Stage[] {
         kind: primaryKind,
         allowedOps,
         ageBracket: bracket,
-        unlockAt: TIER_UNLOCK_AT[tier] ?? 0,
-        variableCount: VARIABLE_COUNT_FOR_TIER[tier] ?? 2,
+        unlockAt,
+        variableCount,
         numberMax: range.max,
         enemyMaxValue: w1.constraints.global.maxAnswerValue,
         spawnIntervalMs,
@@ -88,12 +103,22 @@ export function buildStagesFromW1(w1: W1Json): Stage[] {
 
 // Convert W1.json into the internal BalanceFile shape used by engine.ts.
 export function w1ToBalanceFile(w1: W1Json) {
+  // Normalize enemyDistribution: prefer byBracket, fall back to legacy flat shape.
+  const distLegacyShape = w1.enemyDistribution.byRound
+    ? {
+        byRound: w1.enemyDistribution.byRound,
+        stableFromRound: w1.enemyDistribution.stableFromRound ?? 12,
+        stableDistribution: w1.enemyDistribution.stableDistribution ?? { balloon: 1 },
+      }
+    : null;
+
   return {
     stages: buildStagesFromW1(w1),
     poolSize: w1.pool.cap,
     refillDelayMs: 800,
     startingLives: 5,
-    enemyDistribution: w1.enemyDistribution,
+    enemyDistribution: distLegacyShape ?? { byRound: {}, stableFromRound: 12, stableDistribution: { balloon: 1 as number } },
+    enemyDistributionByBracket: w1.enemyDistribution.byBracket,
     pool: {
       cap: w1.pool.cap,
       answerGuarantee: w1.pool.answerGuarantee,

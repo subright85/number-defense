@@ -2,21 +2,21 @@ import { useEffect, useState, useRef } from 'react';
 import { loadBalance, getStage, getLeaderboard, recordScore, getDailyBest, recordDaily, dailyKindForDate, dateKey, getNickname, setNickname, evaluate } from './game/engine';
 import type { LeaderboardEntry } from './game/engine';
 import { useGameLoop } from './game/useGameLoop';
-import { useT, type Locale } from './i18n';
+import { useT, type Locale, type TFn } from './i18n';
 import { Balloon, BALLOON_W, BALLOON_H, balloonVariantFor, PopBurst } from './components/Balloon';
 import { PoolTile } from './components/PoolTile';
 import { BackgroundLayer } from './components/BackgroundLayer';
 import { playPop, playMiss, playLifeLost, playStart, playUiTap, playModalOpen, playModalClose, playComboBuild, playComboBreak, playTierUp, playGameoverSting, unlockAudio, isMuted, setMuted } from './sfx';
-import type { EquationKind } from './game/types';
+import type { AgeBracket, EquationKind } from './game/types';
 
 function canDragHit(
   dragNum: number,
   equation: { op: string | null; value: number | null }[],
-  enemies: { value: number }[],
+  enemies: { target: number }[],
   mode: EquationKind
 ): boolean {
   const vars = equation.filter(s => s.op === null);
-  const enemyVals = new Set(enemies.map(e => e.value));
+  const enemyVals = new Set(enemies.map(e => e.target));
   for (let i = 0; i < vars.length; i++) {
     if (vars[i].value !== null) continue;
     const testVals = vars.map((v, j) => (j === i ? dragNum : v.value));
@@ -131,6 +131,16 @@ export default function App() {
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem('nd_onboarded') !== '1';
   });
+  const [ageBracket, setAgeBracketState] = useState<AgeBracket>(() => {
+    if (typeof window === 'undefined') return '7-9';
+    const stored = window.localStorage.getItem('nd_age');
+    return (stored === '5-6' || stored === '7-9' || stored === '10-12') ? stored : '7-9';
+  });
+  const setAgeBracket = (b: AgeBracket) => {
+    setAgeBracketState(b);
+    if (typeof window !== 'undefined') window.localStorage.setItem('nd_age', b);
+    restart(b);
+  };
 
   const [windowWidth, setWindowWidth] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 0);
   useEffect(() => {
@@ -146,7 +156,7 @@ export default function App() {
   const animatedScore = useCountUp(scoreForCountUp);
 
   useEffect(() => {
-    loadBalance().then(() => { restart(); setLoaded(true); });
+    loadBalance().then(() => { restart(ageBracket); setLoaded(true); });
   }, []);
 
   useEffect(() => {
@@ -393,6 +403,12 @@ export default function App() {
             onChange={(name) => { setNicknameState(name); setNickname(name); }}
           />
 
+          <AgeBracketPicker
+            value={ageBracket}
+            onChange={(b) => { playUiTap(); setAgeBracket(b); }}
+            t={t}
+          />
+
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8, marginTop: 6,
             color: 'rgba(255,255,255,0.55)', fontSize: 12, lineHeight: 1.5,
@@ -407,11 +423,11 @@ export default function App() {
             </span>
           </div>
 
-          <DailyChallengeCard onStart={() => { unlockAudio(); playStart(); startDaily(); }} />
+          <DailyChallengeCard onStart={() => { unlockAudio(); playStart(); startDaily(ageBracket); }} />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <button
-              onClick={() => { unlockAudio(); playStart(); startGame(); }}
+              onClick={() => { unlockAudio(); playStart(); startGame('add', ageBracket); }}
               style={{
                 ...primaryBtn(MIXED_COLOR),
                 width: '100%',
@@ -537,7 +553,7 @@ export default function App() {
           </div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 22, flexWrap: 'wrap' }}>
             <button
-              onClick={() => { unlockAudio(); playUiTap(); playStart(); state.isDaily ? startDaily() : startGame(); }}
+              onClick={() => { unlockAudio(); playUiTap(); playStart(); state.isDaily ? startDaily(ageBracket) : startGame('add', ageBracket); }}
               style={primaryBtn(MIXED_COLOR)}
             >
               {t('game.retry')}
@@ -1629,6 +1645,70 @@ function NicknameInput({ value, onChange }: { value: string; onChange: (v: strin
           {value.length}/20
         </span>
       )}
+    </div>
+  );
+}
+
+function AgeBracketPicker({
+  value,
+  onChange,
+  t,
+}: {
+  value: AgeBracket;
+  onChange: (b: AgeBracket) => void;
+  t: TFn;
+}) {
+  const options: AgeBracket[] = ['5-6', '7-9', '10-12'];
+  const labelKey = (b: AgeBracket) =>
+    b === '5-6' ? ('age.5-6' as const) : b === '7-9' ? ('age.7-9' as const) : ('age.10-12' as const);
+  return (
+    <div>
+      <div style={{
+        fontSize: 11, fontWeight: 600, letterSpacing: '0.08em',
+        color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase',
+        marginBottom: 6, paddingLeft: 2,
+      }}>
+        {t('age.label')}
+      </div>
+      <div role="radiogroup" style={{
+        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6,
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 12, padding: 4,
+      }}>
+        {options.map((b) => {
+          const selected = b === value;
+          return (
+            <button
+              key={b}
+              role="radio"
+              aria-checked={selected}
+              onClick={() => onChange(b)}
+              className="nd-btn"
+              style={{
+                appearance: 'none',
+                cursor: 'pointer',
+                border: 'none',
+                borderRadius: 8,
+                padding: '10px 6px',
+                fontSize: 12,
+                fontWeight: 700,
+                lineHeight: 1.25,
+                color: selected ? '#1a1a1a' : 'rgba(255,255,255,0.78)',
+                background: selected
+                  ? 'linear-gradient(180deg, var(--nd-primary), #f5c526)'
+                  : 'transparent',
+                boxShadow: selected ? '0 2px 8px rgba(255,217,61,0.35)' : 'none',
+                transition: 'all 0.15s ease',
+                fontFamily: "'Inter', sans-serif",
+                textAlign: 'center',
+              }}
+            >
+              {t(labelKey(b))}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -18,6 +18,11 @@ interface BalanceFile {
     stableFromRound: number;
     stableDistribution: Partial<Record<EnemyKind, number>>;
   };
+  enemyDistributionByBracket?: Partial<Record<AgeBracket, {
+    byRound: EnemyDistByRound;
+    stableFromRound: number;
+    stableDistribution: Partial<Record<EnemyKind, number>>;
+  }>>;
   pool?: {
     cap: number;
     answerGuarantee: { rerollMaxN: number; fallback: { replaceCount: number } };
@@ -114,12 +119,16 @@ export function getStage(index: number): Stage | null {
   return raw ? normalizeStage(raw) : null;
 }
 
-export function stagesForMode(mode: EquationKind): Stage[] {
-  return getBalance().stages.filter(s => s.kind === mode).sort((a, b) => a.unlockAt - b.unlockAt);
+export function stagesForMode(mode: EquationKind, ageBracket?: AgeBracket): Stage[] {
+  const all = getBalance().stages.filter(s => s.kind === mode);
+  const filtered = ageBracket ? all.filter(s => s.ageBracket === ageBracket) : all;
+  // Fallback to all if bracket has no matching stages for this mode.
+  const result = filtered.length > 0 ? filtered : all;
+  return result.sort((a, b) => a.unlockAt - b.unlockAt);
 }
 
-export function pickTierForMode(mode: EquationKind, popped: number): Stage {
-  const tiers = stagesForMode(mode);
+export function pickTierForMode(mode: EquationKind, popped: number, ageBracket?: AgeBracket): Stage {
+  const tiers = stagesForMode(mode, ageBracket);
   let current = tiers[0];
   for (const t of tiers) {
     if (popped >= t.unlockAt) current = t;
@@ -162,9 +171,10 @@ export function evaluate(values: number[], kind: EquationKind): number | null {
 
 // ── Balance accessors ─────────────────────────────────────────
 
-export function getEnemyDistribution(round: number): Partial<Record<EnemyKind, number>> {
+export function getEnemyDistribution(round: number, ageBracket?: AgeBracket): Partial<Record<EnemyKind, number>> {
   const bal = getBalance();
-  const dist = bal.enemyDistribution;
+  const byBracket = ageBracket ? bal.enemyDistributionByBracket?.[ageBracket] : null;
+  const dist = byBracket ?? bal.enemyDistribution;
   if (!dist) return { balloon: 1 };
   if (round >= dist.stableFromRound) return dist.stableDistribution;
   return dist.byRound[String(round)] ?? dist.stableDistribution;
@@ -230,7 +240,7 @@ export function makeFreshPool(stage: Stage | null, rng: () => number): PoolEntry
 
 export function createInitialState(rng: () => number = Math.random, ageBracket: AgeBracket = '7-9'): GameState {
   const bal = isBalanceLoaded() ? getBalance() : null;
-  const firstStage = isBalanceLoaded() ? pickTierForMode('add', 0) : null;
+  const firstStage = isBalanceLoaded() ? pickTierForMode('add', 0, ageBracket) : null;
   return {
     phase: 'menu',
     mode: 'add',
@@ -262,7 +272,7 @@ export function createInitialState(rng: () => number = Math.random, ageBracket: 
 
 export function startEndlessRun(s: GameState, mode: EquationKind, now: number, rng: () => number = Math.random): GameState {
   const bal = getBalance();
-  const stage = pickTierForMode(mode, 0);
+  const stage = pickTierForMode(mode, 0, s.ageBracket);
   return {
     ...s,
     phase: 'playing',
@@ -295,7 +305,7 @@ export function startEndlessRun(s: GameState, mode: EquationKind, now: number, r
 
 export function startDailyRun(s: GameState, now: number, rng: () => number = Math.random): GameState {
   const mode = dailyKindForDate();
-  const stage = pickTierForMode(mode, 0);
+  const stage = pickTierForMode(mode, 0, s.ageBracket);
   const bal = getBalance();
   return {
     ...s,
@@ -457,7 +467,7 @@ export function endWave(s: GameState, rng: () => number = Math.random): GameStat
   }
 
   // Advance to next tier if killedSoFar unlocks it
-  const newTier = pickTierForMode(s.mode, s.killedSoFar);
+  const newTier = pickTierForMode(s.mode, s.killedSoFar, s.ageBracket);
 
   emit({ type: 'wave_start', round: nextRound });
 
@@ -534,7 +544,7 @@ export function spawnEnemy(s: GameState, now: number, rng: () => number = Math.r
   }
 
   // Pick enemy kind from distribution, respecting age-bracket co-occurrence cap
-  const dist = getEnemyDistribution(s.round);
+  const dist = getEnemyDistribution(s.round, s.ageBracket);
   let kind = pickEnemyKind(dist, rng);
   if (!allowEnemyKind(kind, s.enemies, s.ageBracket)) {
     kind = 'balloon'; // fallback to safe kind
