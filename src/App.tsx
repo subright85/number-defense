@@ -46,43 +46,17 @@ function useCountUp(target: number, durationMs = 700): number {
   return display;
 }
 
-// ── HUD icon set (Lucide-style inline SVGs) ──────────
+// ── HUD icon set (PNG sprites; color param ignored — sprites are pre-colored) ──
+const HudImg = ({ src, size = 20 }: { src: string; size?: number }) => (
+  <img src={src} alt="" width={size} height={size} style={{ display: 'block' }} draggable={false} />
+);
 const HudIcons = {
-  heart: (c: string) => (
-    <svg width={20} height={20} viewBox="0 0 24 24" fill={c} stroke="none" style={{ display:'block' }}>
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-    </svg>
-  ),
-  target: (c: string) => (
-    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" style={{ display:'block' }}>
-      <circle cx="12" cy="12" r="10" />
-      <circle cx="12" cy="12" r="5.5" />
-      <circle cx="12" cy="12" r="1.8" fill={c} stroke="none" />
-    </svg>
-  ),
-  star: (c: string) => (
-    <svg width={20} height={20} viewBox="0 0 24 24" fill={c} stroke="none" style={{ display:'block' }}>
-      <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
-    </svg>
-  ),
-  balloon: (c: string) => (
-    <svg width={15} height={21} viewBox="0 0 22 30" style={{ display:'block' }}>
-      <ellipse cx="11" cy="10.5" rx="9" ry="9.5" fill={c} />
-      <path d="M11 20 Q8.5 24 11 27" stroke={c} strokeWidth={1.8} strokeLinecap="round" fill="none" />
-      <ellipse cx="9" cy="7" rx="2.5" ry="1.5" fill="rgba(255,255,255,0.28)" />
-    </svg>
-  ),
-  timer: (c: string) => (
-    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ display:'block' }}>
-      <circle cx="12" cy="12" r="9" />
-      <polyline points="12,7 12,12 15.5,14.5" />
-    </svg>
-  ),
-  flame: (c: string) => (
-    <svg width={15} height={20} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ display:'block' }}>
-      <path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 01-7 7 7 7 0 01-7-7 3.5 3.5 0 013.5-3.5c1.4 0 2.5 1 2.5 2.5" />
-    </svg>
-  ),
+  heart:   (_c?: string) => <HudImg src="/sprites/icons/heart.png" />,
+  target:  (_c?: string) => <HudImg src="/sprites/icons/target.png" />,
+  star:    (_c?: string) => <HudImg src="/sprites/icons/star.png" />,
+  balloon: (_c?: string) => <HudImg src="/sprites/icons/balloon-icon.png" size={21} />,
+  timer:   (_c?: string) => <HudImg src="/sprites/icons/timer.png" />,
+  flame:   (_c?: string) => <HudImg src="/sprites/icons/flame.png" size={20} />,
 };
 
 const LANE_HEIGHT = 460;
@@ -425,9 +399,10 @@ export default function App() {
             </button>
             <button
               onClick={() => { playUiTap(); playModalOpen(); setShowLeaderboard(true); }}
-              style={{ ...secondaryBtn(), width: '100%', fontSize: 13 }}
+              style={{ ...secondaryBtn(), width: '100%', fontSize: 13, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             >
-              🏆 Leaderboard
+              <img src="/sprites/icons/trophy.png" alt="" width={16} height={16} style={{ display: 'block' }} draggable={false} />
+              Leaderboard
             </button>
           </div>
 
@@ -498,9 +473,10 @@ export default function App() {
                 color: 'var(--nd-accent-green)',
                 background: 'rgba(107,207,127,0.15)',
                 border: '1px solid rgba(107,207,127,0.4)',
-                borderRadius: 8, padding: '6px 12px', display: 'inline-block',
+                borderRadius: 8, padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: 6,
               }}>
-                ⭐ NEW BEST · prev {hsSnap.previous}
+                <img src="/sprites/icons/new-badge.png" alt="" width={14} height={14} style={{ display: 'block' }} draggable={false} />
+                NEW BEST · prev {hsSnap.previous}
               </div>
             )}
             {hsSnap && !hsSnap.isNew && hsSnap.rank && (
@@ -517,8 +493,9 @@ export default function App() {
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 22, flexWrap: 'wrap' }}>
             <button
               onClick={() => { unlockAudio(); playUiTap(); playStart(); startGame('add', ageBracket); }}
-              style={primaryBtn(MIXED_COLOR)}
+              style={{ ...primaryBtn(MIXED_COLOR), display: 'inline-flex', alignItems: 'center', gap: 8 }}
             >
+              <img src="/sprites/icons/retry.png" alt="" width={18} height={18} style={{ display: 'block' }} draggable={false} />
               {t('game.retry')}
             </button>
             <button
@@ -626,9 +603,12 @@ export default function App() {
             fontSize: 12,
             fontWeight: 700,
             cursor: 'pointer',
+            display: 'inline-flex', alignItems: 'center', gap: 5,
           }}
         >
-          {state.phase === 'paused' ? '▶ Resume' : '⏸ Pause'}
+          {state.phase === 'paused'
+            ? '▶ Resume'
+            : <><img src="/sprites/icons/pause.png" alt="" width={12} height={12} style={{ display: 'block' }} draggable={false} />Pause</>}
         </button>
       </div>
 
@@ -1143,7 +1123,9 @@ function MuteToggle({ muted, onToggle }: { muted: boolean; onToggle: () => void 
       }}
       title={muted ? 'Unmute' : 'Mute'}
     >
-      {muted ? '🔇' : '🔊'}
+      {muted
+        ? <img src="/sprites/icons/mute-on.png" alt="muted" width={16} height={16} style={{ display: 'block' }} draggable={false} />
+        : '🔊'}
     </button>
   );
 }
@@ -1182,8 +1164,8 @@ function WideMenuLeft({ mode }: { mode: EquationKind }) {
   const entries = getLeaderboard(mode).slice(0, 5);
   return (
     <div style={{ ...WIDE_PANEL_STYLE, left: 0, borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-      <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.4)', letterSpacing: 1, textTransform: 'uppercase' }}>
-        🏆 Top Scores
+      <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.4)', letterSpacing: 1, textTransform: 'uppercase', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <img src="/sprites/icons/trophy.png" alt="" width={12} height={12} style={{ display: 'block' }} draggable={false} />Top Scores
       </div>
       {entries.length === 0 && (
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>No scores yet</div>
@@ -1246,8 +1228,8 @@ function WideGameLeft({ state }: { state: import('./game/types').GameState }) {
   const acc = state.attempts > 0 ? Math.round((state.hits / state.attempts) * 100) : 0;
   return (
     <div style={{ ...WIDE_PANEL_STYLE, left: 0, borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-      <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.4)', letterSpacing: 1, textTransform: 'uppercase' }}>
-        📊 Stats
+      <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.4)', letterSpacing: 1, textTransform: 'uppercase', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <img src="/sprites/icons/share.png" alt="" width={12} height={12} style={{ display: 'block' }} draggable={false} />Stats
       </div>
       {([
         { label: 'Score',    value: state.score,       color: 'var(--nd-primary)' },
@@ -1361,8 +1343,9 @@ function LeaderboardModal({
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           marginBottom: 12,
         }}>
-          <div style={{ fontSize: 18, fontWeight: 800 }}>
-            🏆 Top 10 · {MIXED_GLYPH} Mixed
+          <div style={{ fontSize: 18, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <img src="/sprites/icons/trophy.png" alt="" width={20} height={20} style={{ display: 'block' }} draggable={false} />
+            Top 10 · {MIXED_GLYPH} Mixed
           </div>
           <button onClick={onClose} style={{
             background: 'transparent', border: 'none',
@@ -1645,18 +1628,17 @@ function HeroBlock({ taglineLabel }: { taglineLabel: string }) {
         <Balloon number={5} variant={3} />
       </div>
 
-      <h1 style={{
-        margin: 0,
-        fontSize: 38,
-        fontWeight: 900,
-        letterSpacing: '-0.025em',
-        background: 'linear-gradient(90deg, #fbbf24, #f97316, #ef4444)',
-        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-        backgroundClip: 'text',
-        textShadow: '0 4px 24px rgba(0,0,0,0.4)',
-        lineHeight: 1.05,
-      }}>
-        Number<br />Defense
+      <h1 style={{ margin: 0, lineHeight: 0 }}>
+        <img
+          src="/logo-wordmark.png"
+          alt="Number Defense"
+          style={{
+            display: 'block', margin: '0 auto',
+            maxWidth: '88%', height: 'auto',
+            filter: 'drop-shadow(0 4px 24px rgba(0,0,0,0.4))',
+          }}
+          draggable={false}
+        />
       </h1>
       <div style={{
         marginTop: 6,

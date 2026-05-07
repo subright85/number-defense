@@ -15,7 +15,7 @@ const EN = {
   'over.accuracy': 'Accuracy',
   'over.finalScore': 'Final score',
   'over.formula': 'score × accuracy',
-  'over.restart': '🔄 Restart',
+  'over.restart': 'Restart',
 
   'clear.heading': '✓ Stage {n} clear!',
   'clear.popped': 'Popped',
@@ -50,7 +50,7 @@ const EN = {
   'pause.resume': 'tap anywhere to resume',
   'pause.quit': '← Quit to menu',
 
-  'game.retry': '↻ Retry',
+  'game.retry': 'Retry',
   'game.leaderboard': '🏆 Leaderboard',
   'game.menuBack': '← Menu',
 
@@ -80,7 +80,7 @@ const KO: typeof EN = {
   'over.accuracy': '정확도',
   'over.finalScore': '최종 점수',
   'over.formula': '점수 × 정확도',
-  'over.restart': '🔄 다시 시작',
+  'over.restart': '다시 시작',
 
   'clear.heading': '✓ Stage {n} 클리어!',
   'clear.popped': '제거',
@@ -115,7 +115,7 @@ const KO: typeof EN = {
   'pause.resume': '아무 곳이나 탭해서 재개',
   'pause.quit': '← 메뉴로',
 
-  'game.retry': '↻ 다시 하기',
+  'game.retry': '다시 하기',
   'game.leaderboard': '🏆 리더보드',
   'game.menuBack': '← 메뉴',
 
