@@ -780,24 +780,78 @@ export function submitEquation(s: GameState, now: number, rng: () => number = Ma
   return { state: nextState, hit, result, killedEnemyId, spawnChildren, damagedEnemyId };
 }
 
+// Find a number in [1, stage.numberMax] that, when added to poolNums, makes at
+// least one of `enemyTargets` reachable via any allowedOp. Returns null if no
+// such number exists. Solves the race where on-screen enemies become unsolvable
+// after the player consumes pool entries (their targets were computed against
+// the pre-consume pool). Called from refillPool to bias new numbers toward
+// rescuing in-flight enemies before falling back to drop-buffer / random.
+function pickRescueNumber(
+  poolNums: number[],
+  enemyTargets: number[],
+  stage: Stage,
+  rng: () => number,
+): number | null {
+  if (enemyTargets.length === 0) return null;
+  const unreachable = enemyTargets.filter(
+    t => !stage.allowedOps.some(op => reachableTargetsMixed(poolNums, op, stage).includes(t))
+  );
+  if (unreachable.length === 0) return null;
+
+  const candidates = Array.from({ length: stage.numberMax }, (_, i) => i + 1);
+  for (let i = candidates.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+  }
+  for (const c of candidates) {
+    const augmented = [...poolNums, c];
+    for (const t of unreachable) {
+      if (stage.allowedOps.some(op => reachableTargetsMixed(augmented, op, stage).includes(t))) {
+        return c;
+      }
+    }
+  }
+  return null;
+}
+
 export function refillPool(s: GameState, now: number, rng: () => number = Math.random): GameState {
   const stage = getStage(s.stageIndex);
   if (!stage) return s;
   let changed = false;
   let dropBuffer = s.dropBuffer;
-  const newPool = s.pool.map(p => {
+  const newPool = [...s.pool];
+  const enemyTargets = s.enemies.map(e => e.target);
+
+  for (let i = 0; i < newPool.length; i++) {
+    const p = newPool[i];
     if (p.refillingUntilMs && p.refillingUntilMs <= now) {
       changed = true;
-      // Use drop buffer first (FIFO), fall back to random
+
+      // Pool numbers visible to the rescue check: all slots that aren't
+      // currently empty/refilling, except the one we're about to refill.
+      // Sequential update — earlier rescues in this tick are visible to later
+      // refills, so two refilling slots together solve a 2-variable target.
+      const poolNums = newPool
+        .filter((q, j) => j !== i && q.number > 0 && (!q.refillingUntilMs || q.refillingUntilMs <= now))
+        .map(q => q.number);
+
+      const rescue = pickRescueNumber(poolNums, enemyTargets, stage, rng);
+      if (rescue !== null) {
+        newPool[i] = { id: p.id, number: rescue };
+        continue;
+      }
+
+      // Default behavior: drop buffer FIFO, fallback random.
       const [dropped, remaining] = popFromDropBuffer(dropBuffer);
       if (dropped !== null) {
         dropBuffer = remaining;
-        return { id: p.id, number: Math.max(1, Math.min(stage.numberMax, dropped)) };
+        newPool[i] = { id: p.id, number: Math.max(1, Math.min(stage.numberMax, dropped)) };
+      } else {
+        newPool[i] = { id: p.id, number: rand(rng, 1, stage.numberMax) };
       }
-      return { id: p.id, number: rand(rng, 1, stage.numberMax) };
     }
-    return p;
-  });
+  }
+
   if (!changed && dropBuffer === s.dropBuffer) return s;
   return { ...s, pool: newPool, dropBuffer };
 }
