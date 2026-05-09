@@ -1,10 +1,10 @@
 {
   "$schema": "ND-balance-v1",
-  "version": "W1.3",
+  "version": "W1.4",
   "createdBy": "Robin",
   "createdAt": "2026-05-06T04:25:00Z",
-  "updatedAt": "2026-05-07T06:05:00Z",
-  "notes": "ND mixed ops W1.3 — tier dwell-time 늘림 (15/35/60/90 unlock = T1 15 kills, T2-T3 20-25 kills, T4-T5 30 kills 머무름, 이전 6/15/27/42에서 2-3배 늘림), pool cap 3-8 더 작게 (이전 4-10 → 5-6 T1-T2 = 3, 7-9 T1-T2 = 4). 사용자 신고 '스테이지 너무 빨리 바뀜 + 풀 여전히 큼' 처방.",
+  "updatedAt": "2026-05-09T04:20:00Z",
+  "notes": "W1.4 — Common Core curriculum 매핑 정합 (성철 피드백, Robin 결정 2026-05-09). (1) variableCount ramp: 7-9 T4-T5 = 3, 10-12 T3 = 3 (G3 multi-step / G5 order of ops 매칭). 5-6은 2 고정 (working memory 4 chunks 제한). (2) 10-12 max ramp 매끄럽게: T1 12→25, T2 20→40, T3 30→60 (G4-G5 progression). T4-T5는 보합. mixed3op (var=4) 신규는 wave 2로 보류, bracket 쪼개기는 wave 3 데이터 후 결정.",
 
   "ageBuckets": ["5-6", "7-9", "10-12"],
   "tiers": [1, 2, 3, 4, 5],
@@ -53,10 +53,10 @@
       "T5": {"min": 1, "max": 30, "digits": "1-2", "carry": true, "mulRange": [2, 9], "_note": "+50% + mul ×2-9"}
     },
     "10-12": {
-      "T1": {"min": 1, "max": 12, "mulSingleDigit": true, "_note": "add+mul 시작, max 12 (이전 99 → 87% 낮춤)"},
-      "T2": {"min": 1, "max": 20, "_note": "+67% + sub 도입"},
-      "T3": {"min": 1, "max": 30, "_note": "+50% + div 도입"},
-      "T4": {"min": 1, "max": 50, "_note": "+67% + mixed2op 도입"},
+      "T1": {"min": 1, "max": 25, "mulSingleDigit": true, "_note": "G4 baseline — multi-digit 3×1 표준 매칭 (Robin 2026-05-09)"},
+      "T2": {"min": 1, "max": 40, "_note": "+60% + sub 도입, G4-G5 transition"},
+      "T3": {"min": 1, "max": 60, "_note": "+50% + div 도입, G5 order of ops 등장"},
+      "T4": {"min": 1, "max": 50, "_note": "mixed2op 도입 (var=3) — max는 보합, 구조 복잡도 ↑"},
       "T5": {"min": 1, "max": 99, "multiStepDepth": 3, "_note": "+98% + multi-step depth 3"}
     }
   },
@@ -74,13 +74,13 @@
       "T1": {"unlockAt": 0,  "spawnPerWave": 2, "fallDurationMs": 20000, "variableCount": 2, "poolCap": 4},
       "T2": {"unlockAt": 15, "spawnPerWave": 2, "fallDurationMs": 18000, "variableCount": 2, "poolCap": 4},
       "T3": {"unlockAt": 35, "spawnPerWave": 2, "fallDurationMs": 16000, "variableCount": 2, "poolCap": 5},
-      "T4": {"unlockAt": 60, "spawnPerWave": 3, "fallDurationMs": 14000, "variableCount": 2, "poolCap": 6},
-      "T5": {"unlockAt": 90, "spawnPerWave": 3, "fallDurationMs": 13000, "variableCount": 2, "poolCap": 7}
+      "T4": {"unlockAt": 60, "spawnPerWave": 3, "fallDurationMs": 14000, "variableCount": 3, "poolCap": 6},
+      "T5": {"unlockAt": 90, "spawnPerWave": 3, "fallDurationMs": 13000, "variableCount": 3, "poolCap": 7}
     },
     "10-12": {
       "T1": {"unlockAt": 0,  "spawnPerWave": 3, "fallDurationMs": 16000, "variableCount": 2, "poolCap": 5},
       "T2": {"unlockAt": 15, "spawnPerWave": 3, "fallDurationMs": 15000, "variableCount": 2, "poolCap": 5},
-      "T3": {"unlockAt": 35, "spawnPerWave": 3, "fallDurationMs": 14000, "variableCount": 2, "poolCap": 6},
+      "T3": {"unlockAt": 35, "spawnPerWave": 3, "fallDurationMs": 14000, "variableCount": 3, "poolCap": 6},
       "T4": {"unlockAt": 60, "spawnPerWave": 3, "fallDurationMs": 13000, "variableCount": 3, "poolCap": 7},
       "T5": {"unlockAt": 90, "spawnPerWave": 3, "fallDurationMs": 12000, "variableCount": 3, "poolCap": 8}
     }
