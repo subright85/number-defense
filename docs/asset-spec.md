@@ -240,14 +240,14 @@ Splitter 격파 시 분열되는 작은 풍선은 기존 balloon sprite를 60% �
 ## 7. 산출물 요약 (성철이 박을 거)
 
 > [!NOTE]
-> 진행 상황: AI 이미지 생성 할당량 초과로 인해 P0 에셋 17장을 우선 생성 및 `public/` 디렉토리에 배치 완료했습니다. 잔여 에셋은 할당량 초기화 후 진행 예정입니다.
+> 진행 상황 (2차): 기존 그리드 배경 문제를 해결하기 위해 녹색 크로마키 배경으로 에셋을 다시 생성하고, `remove_green_bg.py` 파이썬 스크립트를 통해 투명화 처리를 완료했습니다. 현재 다시 이미지 생성 할당량 초과로 일부 UI 아이콘이 대기 중입니다.
 
 | 카테고리 | 장수 | 우선순위 | 진행 상태 |
 |---|---|---|---|
-| Brand: favicon / wordmark / og-image | 3 | **P0** | ✅ 3장 완료 |
-| UI 아이콘 (HUD / 액션 / UI) | 15 | **P0** | ⚠️ 14장 완료, 1장 대기 (`mute-off`) |
-| Enemy modifier overlays (tank/fast/splitter/shielded ring) | 4 | **P1** | ⏳ 4장 대기 |
-| Shield op badges | 4 | **P1** | ⏳ 4장 대기 |
+| Brand: favicon / wordmark / og-image | 3 | **P0** | ✅ 3장 완료 (투명화 적용) |
+| UI 아이콘 (HUD / 액션 / UI) | 15 | **P0** | ⚠️ 6장 완료, 9장 대기 |
+| Enemy modifier overlays (tank/fast/splitter/shielded ring) | 4 | **P1** | ✅ 4장 완료 (투명화 적용) |
+| Shield op badges | 4 | **P1** | ✅ 4장 완료 (투명화 적용) |
 | Splitter mini balloons (선택) | 6 | P2 | ⏳ 6장 대기 |
 | **합계** | **32장** | | **17장 완료 / 15장 대기** |
 

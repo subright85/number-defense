@@ -1174,9 +1174,13 @@ function MuteToggle({ muted, onToggle }: { muted: boolean; onToggle: () => void 
       }}
       title={muted ? 'Unmute' : 'Mute'}
     >
-      {muted
-        ? <img src="/sprites/icons/mute-on.png" alt="muted" width={16} height={16} style={{ display: 'block' }} draggable={false} />
-        : '🔊'}
+      <img
+        src={muted ? '/sprites/icons/mute-on.png' : '/sprites/icons/mute-off.png'}
+        alt={muted ? 'muted' : 'sound on'}
+        width={16} height={16}
+        style={{ display: 'block' }}
+        draggable={false}
+      />
     </button>
   );
 }
