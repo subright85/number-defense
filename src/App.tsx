@@ -1033,6 +1033,9 @@ export default function App() {
     )}
     {state.phase === 'paused' && (
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Game paused"
         onClick={() => { playModalClose(); togglePause(); }}
         style={{
           position: 'fixed', inset: 0, zIndex: 250,
@@ -1391,6 +1394,9 @@ function LeaderboardModal({
       }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lb-title"
         onClick={(e) => e.stopPropagation()}
         style={{
           maxWidth: 360, width: '100%',
@@ -1405,7 +1411,7 @@ function LeaderboardModal({
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           marginBottom: 12,
         }}>
-          <div style={{ fontSize: 18, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <div id="lb-title" style={{ fontSize: 18, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             <img src="/sprites/icons/trophy.png" alt="" width={20} height={20} style={{ display: 'block' }} draggable={false} />
             Top 10 · {MIXED_GLYPH} Mixed
           </div>
