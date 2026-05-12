@@ -54,6 +54,14 @@ const EN = {
   'game.retry': 'Retry',
   'game.leaderboard': '🏆 Leaderboard',
   'game.menuBack': '← Menu',
+  'game.share': '✉ Share',
+  'game.saveCard': '📥 Save card',
+
+  'over.newBest': '🏅 NEW BEST · prev {prev}',
+  'over.top10': 'Top 10 · ranked #{rank} (best {prev})',
+  'over.prevBest': 'BEST · {prev}',
+  'over.bestCombo': '🔥 Best combo: ×{n}',
+  'over.survived': '{n}s survived',
 
   'ltr.heading': 'Equations solve left to right!',
   'ltr.body': 'e.g. 3 + 2 × 4 → 5 × 4 → 20',
@@ -120,6 +128,14 @@ const KO: typeof EN = {
   'game.retry': '다시 하기',
   'game.leaderboard': '🏆 리더보드',
   'game.menuBack': '← 메뉴',
+  'game.share': '✉ 공유',
+  'game.saveCard': '📥 카드 저장',
+
+  'over.newBest': '🏅 최고 기록! · 이전 {prev}',
+  'over.top10': 'Top 10 · #{rank}위 (최고 {prev})',
+  'over.prevBest': '최고 · {prev}',
+  'over.bestCombo': '🔥 최고 콤보: ×{n}',
+  'over.survived': '{n}초 생존',
 
   'ltr.heading': '수식은 왼쪽부터 순서대로 풀어요!',
   'ltr.body': '예: 3 + 2 × 4 → 5 × 4 → 20',

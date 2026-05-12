@@ -471,7 +471,7 @@ export default function App() {
             </div>
             <div>{t('over.killedPassed')}: <b>{state.killedSoFar}</b> · <b>{state.reachedBaseSoFar}</b></div>
             <div>{t('over.accuracy')}: <b>{accuracy}%</b> ({state.hits}/{state.attempts})</div>
-            <div>🔥 Best combo: <b>×{state.bestCombo}</b></div>
+            <div>{t('over.bestCombo', { n: state.bestCombo })}</div>
             <div style={{
               marginTop: 16,
               background: 'linear-gradient(135deg, rgba(255,217,61,0.08), rgba(255,217,61,0.02))',
@@ -502,17 +502,17 @@ export default function App() {
                 borderRadius: 8, padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: 6,
               }}>
                 <img src="/sprites/icons/new-badge.png" alt="" width={14} height={14} style={{ display: 'block' }} draggable={false} />
-                NEW BEST · prev {hsSnap.previous}
+                {t('over.newBest', { prev: hsSnap.previous })}
               </div>
             )}
             {hsSnap && !hsSnap.isNew && hsSnap.rank && (
               <div style={{ marginTop: 6, fontSize: 11, color: 'var(--nd-primary)', fontWeight: 700 }}>
-                Top 10 · ranked #{hsSnap.rank} (best {hsSnap.previous})
+                {t('over.top10', { rank: hsSnap.rank, prev: hsSnap.previous })}
               </div>
             )}
             {hsSnap && !hsSnap.isNew && !hsSnap.rank && (
               <div style={{ marginTop: 6, fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>
-                BEST · {hsSnap.previous}
+                {t('over.prevBest', { prev: hsSnap.previous })}
               </div>
             )}
           </div>
@@ -535,7 +535,7 @@ export default function App() {
               })}
               style={secondaryBtn()}
             >
-              ✉ Share
+              {t('game.share')}
             </button>
             <button
               onClick={() => downloadScoreCard({
@@ -550,7 +550,7 @@ export default function App() {
               })}
               style={secondaryBtn()}
             >
-              📥 Save card
+              {t('game.saveCard')}
             </button>
             <button onClick={() => { playUiTap(); playModalOpen(); setShowLeaderboard(true); }} style={secondaryBtn()}>
               {t('game.leaderboard')}
