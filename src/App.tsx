@@ -1012,7 +1012,7 @@ export default function App() {
           border: '1px solid rgba(255,255,255,0.18)',
         }}
       >
-        {t('onboarding.tip')}
+        {ageBracket === '5-6' ? t('onboarding.tip.k') : t('onboarding.tip')}
         <button
           onClick={() => {
             setShowOnboarding(false);
@@ -1150,6 +1150,11 @@ function LocaleToggle({ locale, onToggle }: { locale: Locale; onToggle: () => vo
         letterSpacing: '0.04em',
         cursor: 'pointer',
         backdropFilter: 'blur(6px)',
+        minWidth: 44,
+        minHeight: 44,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
       title="Toggle language"
     >
@@ -1174,6 +1179,11 @@ function MuteToggle({ muted, onToggle }: { muted: boolean; onToggle: () => void 
         fontSize: 14,
         cursor: 'pointer',
         backdropFilter: 'blur(6px)',
+        minWidth: 44,
+        minHeight: 44,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
       title={muted ? 'Unmute' : 'Mute'}
     >
@@ -1383,6 +1393,8 @@ function LeaderboardModal({
   mode, onClose,
 }: { mode: EquationKind; onClose: () => void }) {
   const entries = getLeaderboard(mode);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => { closeRef.current?.focus(); }, []);
   return (
     <div
       onClick={onClose}
@@ -1415,9 +1427,11 @@ function LeaderboardModal({
             <img src="/sprites/icons/trophy.png" alt="" width={20} height={20} style={{ display: 'block' }} draggable={false} />
             Top 10 · {MIXED_GLYPH} Mixed
           </div>
-          <button onClick={onClose} style={{
+          <button ref={closeRef} onClick={onClose} style={{
             background: 'transparent', border: 'none',
             color: 'rgba(255,255,255,0.6)', fontSize: 18, cursor: 'pointer',
+            minWidth: 44, minHeight: 44,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           }}>×</button>
         </div>
         {entries.length === 0 ? (
@@ -1486,6 +1500,7 @@ function secondaryBtn(): React.CSSProperties {
     fontSize: 13,
     fontWeight: 700,
     cursor: 'pointer',
+    minHeight: 44,
   };
 }
 
@@ -1652,6 +1667,7 @@ function AgeBracketPicker({
                 border: 'none',
                 borderRadius: 8,
                 padding: '10px 6px',
+                minHeight: 44,
                 fontSize: 12,
                 fontWeight: 700,
                 lineHeight: 1.25,
@@ -1753,8 +1769,10 @@ function LtrBanner({ heading, body, note, onClose }: { heading: string; body: st
         style={{
           background: 'transparent', border: 'none',
           color: 'rgba(255,255,255,0.7)', fontSize: 16,
-          cursor: 'pointer', padding: '0 2px', flexShrink: 0,
+          cursor: 'pointer', padding: 0, flexShrink: 0,
           lineHeight: 1,
+          minWidth: 44, minHeight: 44,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         }}
         aria-label="닫기"
       >×</button>

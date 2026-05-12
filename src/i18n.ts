@@ -44,6 +44,7 @@ const EN = {
   'tagline': 'Math · Pop · Defend',
 
   'onboarding.tip': '👋 Tap or drag a number tile up into the equation. Match the result to a falling balloon.',
+  'onboarding.tip.k': '👋 Tap a number below! When the answer matches the falling balloon — POP! 🎈',
   'onboarding.gotIt': 'got it',
 
   'pause.title': '⏸ Paused',
@@ -109,6 +110,7 @@ const KO: typeof EN = {
   'tagline': 'Math · Pop · Defend',
 
   'onboarding.tip': '👋 숫자 타일을 탭하거나 식 위로 드래그해서 넣으세요. 결과가 떨어지는 풍선과 맞으면 풍선이 터져요.',
+  'onboarding.tip.k': '👋 아래 숫자를 탭해봐! 답이 맞으면 풍선이 펑! 🎈',
   'onboarding.gotIt': '알겠어요',
 
   'pause.title': '⏸ 일시 정지',
