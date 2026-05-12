@@ -648,6 +648,7 @@ export default function App() {
             fontWeight: 700,
             cursor: 'pointer',
             display: 'inline-flex', alignItems: 'center', gap: 5,
+            minHeight: 44,
           }}
         >
           {state.phase === 'paused'
@@ -1386,6 +1387,7 @@ function primaryBtn(color: string): React.CSSProperties {
     fontWeight: 800,
     cursor: 'pointer',
     boxShadow: shadow,
+    minHeight: 44,
   };
 }
 
