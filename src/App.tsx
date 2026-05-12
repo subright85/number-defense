@@ -428,7 +428,7 @@ export default function App() {
               style={{ ...secondaryBtn(), width: '100%', fontSize: 13, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             >
               <img src="/sprites/icons/trophy.png" alt="" width={16} height={16} style={{ display: 'block' }} draggable={false} />
-              Leaderboard
+              {t('game.leaderboard')}
             </button>
           </div>
 
