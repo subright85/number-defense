@@ -1771,7 +1771,16 @@ function DonationFooter() {
       fontSize: 11, color: 'rgba(255,255,255,0.4)',
       display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center',
     }}>
-      <div>Free, no ads. Built with care.</div>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <span>Free, no ads. Built with care.</span>
+        <a
+          href="/privacy-policy.html"
+          target="_blank" rel="noopener noreferrer"
+          style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: 700 }}
+        >
+          Privacy
+        </a>
+      </div>
       <div style={{ display: 'flex', gap: 8 }}>
         <a
           href="https://buymeacoffee.com/sukim"
