@@ -46,44 +46,9 @@ function useCountUp(target: number, durationMs = 700): number {
   return display;
 }
 
-// ── HUD icon set (inline SVG, color-controllable) — Sanji 권장 D안 ──
-// PNG는 메뉴/버튼용으로 유지. HUD는 위계용 색 제어 필요해서 SVG로 갈아냄.
-const HudIcons = {
-  heart: (c: string) => (
-    <svg width={13} height={13} viewBox="0 0 24 24" fill={c} stroke="none" style={{ display: 'block' }}>
-      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.27 2 8.5 2 5.41 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.08C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.41 22 8.5c0 3.77-3.4 6.86-8.55 11.53L12 21.35z" />
-    </svg>
-  ),
-  target: (c: string) => (
-    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" style={{ display: 'block' }}>
-      <circle cx="12" cy="12" r="10" />
-      <circle cx="12" cy="12" r="5.5" />
-      <circle cx="12" cy="12" r="1.8" fill={c} stroke="none" />
-    </svg>
-  ),
-  star: (c: string) => (
-    <svg width={13} height={13} viewBox="0 0 24 24" fill={c} stroke="none" style={{ display: 'block' }}>
-      <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
-    </svg>
-  ),
-  balloon: (c: string) => (
-    <svg width={11} height={15} viewBox="0 0 22 30" style={{ display: 'block' }}>
-      <ellipse cx="11" cy="10.5" rx="9" ry="9.5" fill={c} />
-      <path d="M11 20 Q8.5 24 11 27" stroke={c} strokeWidth={1.8} strokeLinecap="round" fill="none" />
-    </svg>
-  ),
-  timer: (c: string) => (
-    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
-      <circle cx="12" cy="12" r="9" />
-      <polyline points="12,7 12,12 15.5,14.5" />
-    </svg>
-  ),
-  flame: (c: string) => (
-    <svg width={11} height={15} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
-      <path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 01-7 7 7 7 0 01-7-7 3.5 3.5 0 013.5-3.5c1.4 0 2.5 1 2.5 2.5" />
-    </svg>
-  ),
-};
+function HudIcon({ src, size = 13, opacity = 1 }: { src: string; size?: number; opacity?: number }) {
+  return <img src={src} alt="" width={size} height={size} style={{ display: 'block', opacity }} draggable={false} />;
+}
 
 const LANE_HEIGHT = 460;
 const LANE_WIDTH  = 320;
@@ -610,20 +575,20 @@ export default function App() {
         boxShadow: '0 2px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.07)',
       }}>
         {/* G1: lives — 유일한 항상-색 강조 */}
-        <StatItem icon={HudIcons.heart('var(--nd-accent-red)')} value={state.lives} color="var(--nd-accent-red)" bold />
+        <StatItem icon={<HudIcon src="/sprites/icons/heart.png" />} value={state.lives} color="var(--nd-accent-red)" bold />
         <Sep />
         {/* G2: score + accuracy — score는 mono primary 톤, accuracy는 muted */}
-        <StatItem icon={HudIcons.star('rgba(255,255,255,0.9)')} value={state.score} color="rgba(255,255,255,0.9)" mono />
-        <StatItem icon={HudIcons.target('rgba(255,255,255,0.65)')} value={`${accuracy}%`} color="rgba(255,255,255,0.65)" />
+        <StatItem icon={<HudIcon src="/sprites/icons/star.png" opacity={0.9} />} value={state.score} color="rgba(255,255,255,0.9)" mono />
+        <StatItem icon={<HudIcon src="/sprites/icons/target.png" opacity={0.65} />} value={`${accuracy}%`} color="rgba(255,255,255,0.65)" />
         <Sep />
         {/* G3: kills + timer — muted */}
-        <StatItem icon={HudIcons.balloon('rgba(255,255,255,0.55)')} value={state.killedSoFar} color="rgba(255,255,255,0.55)" />
-        <StatItem icon={HudIcons.timer('rgba(255,255,255,0.55)')} value={`${survivedSec}s`} color="rgba(255,255,255,0.55)" />
+        <StatItem icon={<HudIcon src="/sprites/icons/balloon-icon.png" opacity={0.55} />} value={state.killedSoFar} color="rgba(255,255,255,0.55)" />
+        <StatItem icon={<HudIcon src="/sprites/icons/timer.png" opacity={0.55} />} value={`${survivedSec}s`} color="rgba(255,255,255,0.55)" />
         {/* combo — 2 이상일 때만 */}
         {state.combo >= 2 && (
           <>
             <Sep />
-            <StatItem icon={HudIcons.flame('var(--nd-accent-orange)')} value={`×${state.combo}`} color="var(--nd-accent-orange)" bold />
+            <StatItem icon={<HudIcon src="/sprites/icons/flame.png" />} value={`×${state.combo}`} color="var(--nd-accent-orange)" bold />
           </>
         )}
       </div>
