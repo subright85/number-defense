@@ -7,6 +7,7 @@ const EN = {
   'menu.intro2': 'When the result matches a falling balloon, the balloon pops.',
   'menu.intro3': 'Balloons that reach the bottom take a life.',
   'menu.start': '▶ Start',
+  'menu.daily': 'Daily Challenge',
 
   'over.victory': '🎉 All stages cleared!',
   'over.gameover': '💀 Game Over',
@@ -81,6 +82,7 @@ const KO: typeof EN = {
   'menu.intro2': '결과값이 떨어지는 풍선과 같으면 풍선이 터져요.',
   'menu.intro3': '바닥에 닿은 풍선만큼 라이프가 줄어요.',
   'menu.start': '▶ 시작하기',
+  'menu.daily': '데일리 챌린지',
 
   'over.victory': '🎉 모든 스테이지 클리어!',
   'over.gameover': '💀 게임 오버',

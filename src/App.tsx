@@ -61,7 +61,7 @@ const MIXED_GLYPH = '∞';
 export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [now, setNow] = useState(Date.now());
-  const { state, flashes, tankHits, splitAnims, startGame, restart, togglePause, tap, drop, untap, submit, clear } = useGameLoop();
+  const { state, flashes, tankHits, splitAnims, startGame, startDaily, restart, togglePause, tap, drop, untap, submit, clear } = useGameLoop();
   const recentlyKilledRef = useRef<Map<string, number>>(new Map());
   const { locale, toggleLocale, t } = useT();
   const recordedHighScoreRef = useRef(false);
@@ -394,6 +394,13 @@ export default function App() {
             >
               <img src="/sprites/icons/trophy.png" alt="" width={16} height={16} style={{ display: 'block' }} draggable={false} />
               {t('game.leaderboard')}
+            </button>
+            <button
+              onClick={() => { playUiTap(); playModalOpen(); startDaily(ageBracket); }}
+              style={{ ...secondaryBtn(), width: '100%', fontSize: 13, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              <img src="/sprites/icons/daily-target.png" alt="" width={16} height={16} style={{ display: 'block' }} draggable={false} />
+              {t('menu.daily')}
             </button>
           </div>
 
