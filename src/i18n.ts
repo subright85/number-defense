@@ -28,6 +28,8 @@ const EN = {
   'hud.accuracy': 'accuracy',
   'hud.score': 'score',
   'hud.progress': 'progress',
+  'hud.pause': 'Pause',
+  'hud.resume': '▶ Resume',
   'stage.label': 'Stage {n} · {kind} · max {max} · {sub}',
 
   'kind.add': 'Addition +',
@@ -103,6 +105,8 @@ const KO: typeof EN = {
   'hud.accuracy': '정확도',
   'hud.score': '점수',
   'hud.progress': '진행률',
+  'hud.pause': '일시정지',
+  'hud.resume': '▶ 재개',
   'stage.label': 'Stage {n} · {kind} · 최대 {max} · {sub}',
 
   'kind.add': '더하기 +',

@@ -624,8 +624,8 @@ export default function App() {
           }}
         >
           {state.phase === 'paused'
-            ? '▶ Resume'
-            : <><img src="/sprites/icons/pause.png" alt="" width={12} height={12} style={{ display: 'block' }} draggable={false} />Pause</>}
+            ? t('hud.resume')
+            : <><img src="/sprites/icons/pause.png" alt="" width={12} height={12} style={{ display: 'block' }} draggable={false} />{t('hud.pause')}</>}
         </button>
       </div>
 
